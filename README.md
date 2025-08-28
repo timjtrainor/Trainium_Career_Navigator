@@ -11,7 +11,7 @@ This guide explains required **environment variables** and **startup steps** for
 ---
 
 ## 1) Environment Variables (.env)
-Create a file named `.env` in the repo root with the values below. You can copy this block into `.env` and update as needed. Do **not** commit real secrets.
+Copy `.env.example` to `.env` in the repo root and update as needed. Do **not** commit real secrets.
 
 ```bash
 # === LLM providers ===
@@ -20,13 +20,15 @@ ANTHROPIC_API_KEY=
 GOOGLE_API_KEY=   # for Gemini (google-generativeai)
 
 # === Databases ===
-POSTGRES_USER=trainium
-POSTGRES_PASSWORD=devpassword
-POSTGRES_DB=trainium
+POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
+POSTGRES_DB=trainium
+POSTGRES_USER=trainium
+POSTGRES_PASSWORD=changeme
 
-MONGO_INITDB_DATABASE=trainium
+MONGO_HOST=mongo
 MONGO_PORT=27017
+MONGO_DB=trainium
 
 # === Kong (DB-less mode) ===
 KONG_LOG_LEVEL=info
@@ -40,13 +42,13 @@ ENVIRONMENT=local
 
 ### Variable reference
 - **OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_API_KEY**: Optional for now; used by Agents when hitting LLMs.
-- **POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB / POSTGRES_PORT**: Credentials and port for the Postgres container.
-- **MONGO_INITDB_DATABASE / MONGO_PORT**: Initial DB and port for Mongo.
+- **POSTGRES_HOST / POSTGRES_PORT / POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD**: Connection settings for the Postgres container.
+- **MONGO_HOST / MONGO_PORT / MONGO_DB**: Connection settings for the Mongo container.
 - **KONG_LOG_LEVEL**: Kong log verbosity (`info`, `debug`, etc.).
 - **KONG_ADMIN_LISTEN**: Admin API bind (enabled only in dev).
 - **ENVIRONMENT**: Passed to the Agents service for environment-aware behavior.
 
-Create a **`.env.example`** (checked in) with safe placeholders so others can copy it to `.env` quickly.
+An **`.env.example`** is checked in with safe placeholders so others can copy it to `.env` quickly.
 
 ---
 

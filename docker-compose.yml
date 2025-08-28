@@ -5,6 +5,8 @@ name: trainium
 services:
   kong:
     image: kong:3.6
+    env_file:
+      - .env
     depends_on:
       - frontend
       - agents
@@ -39,13 +41,14 @@ services:
       - .env
     environment:
       ENVIRONMENT: ${ENVIRONMENT}
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      MONGO_HOST: mongo
+      MONGO_HOST: ${MONGO_HOST}
       MONGO_PORT: ${MONGO_PORT}
+      MONGO_DB: ${MONGO_DB}
       # LLM keys (also pulled from env_file)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -78,6 +81,8 @@ services:
     image: mongo:7
     env_file:
       - .env
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
     volumes:
       - mongodata:/data/db
     ports:
