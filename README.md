@@ -36,9 +36,12 @@ MONGO_DB=trainium
 KONG_LOG_LEVEL=info
 # Admin API bound to localhost; change to 0.0.0.0:8001 for host access in dev
 KONG_ADMIN_LISTEN=127.0.0.1:8001
+KONG_PROXY_PORT=8000
+KONG_ADMIN_PORT=8001
 
 # === App ===
 ENVIRONMENT=local
+FRONTEND_PORT=80
 ```
 
 > **Tip**: Keep a private `.env.local` for real secrets and `source` it in your shell before running Docker.
@@ -49,6 +52,8 @@ ENVIRONMENT=local
 - **MONGO_HOST / MONGO_PORT / MONGO_DB**: Connection settings for the Mongo container.
 - **KONG_LOG_LEVEL**: Kong log verbosity (`info`, `debug`, etc.).
 - **KONG_ADMIN_LISTEN**: Admin API bind. Defaults to `127.0.0.1:8001` for safety; set to `0.0.0.0:8001` if you need host access in development.
+- **KONG_PROXY_PORT / KONG_ADMIN_PORT**: Host ports for Kong's proxy and admin interfaces.
+- **FRONTEND_PORT**: Port exposed for the frontend service.
 - **ENVIRONMENT**: Passed to the Agents service for environment-aware behavior.
 
 An **`.env.example`** is checked in with safe placeholders so others can copy it to `.env` quickly.

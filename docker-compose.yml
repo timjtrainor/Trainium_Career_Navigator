@@ -24,15 +24,15 @@ services:
     volumes:
       - ./gateway/kong.yml:/etc/kong/kong.yml:ro
     ports:
-      - "8000:8000"   # public proxy
-      - "8001:8001"   # admin api (dev only)
+      - "${KONG_PROXY_PORT}:8000"   # public proxy
+      - "${KONG_ADMIN_PORT}:8001"   # admin api (dev only)
     networks: [trainium-net]
     restart: unless-stopped
 
   frontend:
     build: ./frontend
-    expose:
-      - "80"
+    ports:
+      - "${FRONTEND_PORT}:80"
     networks: [trainium-net]
     restart: unless-stopped
 
@@ -84,7 +84,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"      # expose for local tools (optional)
+      - "${POSTGRES_PORT}:5432"      # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
     healthcheck:
@@ -102,7 +102,7 @@ services:
     volumes:
       - mongodata:/data/db
     ports:
-      - "27017:27017"    # expose for local tools (optional)
+      - "${MONGO_PORT}:27017"    # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
     healthcheck:
