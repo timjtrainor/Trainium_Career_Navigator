@@ -1,0 +1,5 @@
+personas:
+  - id: test
+    name: Test Persona
+    category: test
+    summary: Minimal persona for smoke tests.
