@@ -3,16 +3,15 @@ import sys
 import time
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
+import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-from jobspy_service.app.main import app, JobSearchResponse  # noqa: E402
+from jobspy_service.app.main import JobSearchResponse  # noqa: E402
 import jobspy_service.app.main as main  # noqa: E402
 
-client = TestClient(app)
 
-
-def test_search_returns_schema_for_multiple_sources(monkeypatch):
+@pytest.mark.anyio
+async def test_search_returns_schema_for_multiple_sources(monkeypatch, client):
     """Endpoint returns data conforming to schema for each source."""
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed,linkedin")
@@ -45,7 +44,7 @@ def test_search_returns_schema_for_multiple_sources(monkeypatch):
 
     for src in ("indeed", "linkedin"):
         with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
-            response = client.get("/jobs/search", params={"source": src})
+            response = await client.get("/jobs/search", params={"source": src})
         assert response.status_code == 200
         data = JobSearchResponse.model_validate(response.json())
         assert data.source == src
@@ -61,7 +60,8 @@ def test_search_returns_schema_for_multiple_sources(monkeypatch):
         }
 
 
-def test_cached_query_returns_under_one_second(monkeypatch):
+@pytest.mark.anyio
+async def test_cached_query_returns_under_one_second(monkeypatch, client):
     """Second identical query should be served from cache quickly."""
     main._CACHE.clear()
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
@@ -76,11 +76,11 @@ def test_cached_query_returns_under_one_second(monkeypatch):
 
     with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
         start = time.perf_counter()
-        first = client.get("/jobs/search", params={"source": "indeed"})
+        first = await client.get("/jobs/search", params={"source": "indeed"})
         first_duration = time.perf_counter() - start
 
         start = time.perf_counter()
-        second = client.get("/jobs/search", params={"source": "indeed"})
+        second = await client.get("/jobs/search", params={"source": "indeed"})
         second_duration = time.perf_counter() - start
 
     assert first.status_code == 200

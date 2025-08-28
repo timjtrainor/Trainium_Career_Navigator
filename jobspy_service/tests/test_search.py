@@ -2,45 +2,45 @@ from pathlib import Path
 import sys
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
+import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 import jobspy_service.app.main as main
-from jobspy_service.app.main import app
 
 
-client = TestClient(app)
-
-
-def test_disabled_returns_501(monkeypatch):
+@pytest.mark.anyio
+async def test_disabled_returns_501(monkeypatch, client):
     monkeypatch.setenv("JOBSPY_ENABLED", "false")
     monkeypatch.setenv("JOBSPY_SOURCES", "google")
-    response = client.get(
+    response = await client.get(
         "/jobs/search", params={"source": "google", "google_search_term": "python"}
     )
     assert response.status_code == 501
     assert response.json()["detail"] == "scraping disabled"
 
 
-def test_google_not_allowlisted_returns_403(monkeypatch):
+@pytest.mark.anyio
+async def test_google_not_allowlisted_returns_403(monkeypatch, client):
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed,linkedin")
-    response = client.get(
+    response = await client.get(
         "/jobs/search", params={"source": "google", "google_search_term": "python"}
     )
     assert response.status_code == 403
     assert response.json()["detail"] == "Google not allowlisted"
 
 
-def test_google_missing_search_term_returns_400(monkeypatch):
+@pytest.mark.anyio
+async def test_google_missing_search_term_returns_400(monkeypatch, client):
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "google")
-    response = client.get("/jobs/search", params={"source": "google"})
+    response = await client.get("/jobs/search", params={"source": "google"})
     assert response.status_code == 400
     assert response.json()["detail"] == "google_search_term required for Google Jobs"
 
 
-def test_google_scrape_with_delay(monkeypatch):
+@pytest.mark.anyio
+async def test_google_scrape_with_delay(monkeypatch, client):
     calls = []
 
     def fake_sleep(delay: float) -> None:
@@ -58,7 +58,7 @@ def test_google_scrape_with_delay(monkeypatch):
         with patch(
             "jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape
         ) as mock_scrape:
-            response = client.get(
+            response = await client.get(
                 "/jobs/search",
                 params={"source": "google", "google_search_term": "python"},
             )
@@ -75,7 +75,8 @@ def test_google_scrape_with_delay(monkeypatch):
     assert "jobs" in body
 
 
-def test_normalizes_output_for_multiple_sources(monkeypatch):
+@pytest.mark.anyio
+async def test_normalizes_output_for_multiple_sources(monkeypatch, client):
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed,linkedin")
 
@@ -107,7 +108,7 @@ def test_normalizes_output_for_multiple_sources(monkeypatch):
 
     for src in ("indeed", "linkedin"):
         with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
-            response = client.get("/jobs/search", params={"source": src})
+            response = await client.get("/jobs/search", params={"source": src})
         assert response.status_code == 200
         job = response.json()["jobs"][0]
         assert set(job) == {
@@ -131,7 +132,8 @@ def test_normalizes_output_for_multiple_sources(monkeypatch):
             assert job["remote_status"] == "remote"
 
 
-def test_repeat_query_uses_cache(monkeypatch):
+@pytest.mark.anyio
+async def test_repeat_query_uses_cache(monkeypatch, client):
     main._CACHE.clear()
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
@@ -148,17 +150,18 @@ def test_repeat_query_uses_cache(monkeypatch):
 
     with patch("jobspy_service.app.main.time.sleep", side_effect=fake_sleep):
         with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
-            client.get(
+            await client.get(
                 "/jobs/search", params={"source": "indeed", "search_term": "python"}
             )
-            client.get(
+            await client.get(
                 "/jobs/search", params={"source": "indeed", "search_term": "python"}
             )
 
     assert calls == [("sleep", 2), ("scrape", "indeed", "python")]
 
 
-def test_cache_expires_after_ttl(monkeypatch):
+@pytest.mark.anyio
+async def test_cache_expires_after_ttl(monkeypatch, client):
     main._CACHE.clear()
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
@@ -180,16 +183,16 @@ def test_cache_expires_after_ttl(monkeypatch):
     with patch("jobspy_service.app.main.time.sleep", side_effect=fake_sleep):
         with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
             with patch("jobspy_service.app.main.time.time", side_effect=fake_time):
-                client.get(
+                await client.get(
                     "/jobs/search", params={"source": "indeed", "search_term": "python"}
                 )
                 calls.clear()
-                client.get(
+                await client.get(
                     "/jobs/search", params={"source": "indeed", "search_term": "python"}
                 )
                 assert calls == []
                 current["t"] = 10.0
-                client.get(
+                await client.get(
                     "/jobs/search", params={"source": "indeed", "search_term": "python"}
                 )
 
