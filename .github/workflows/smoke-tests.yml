@@ -1,0 +1,29 @@
+name: Smoke Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy env
+        run: cp .env.example .env
+      - name: Build and run stack
+        run: docker compose up -d --build
+      - name: Wait for services
+        run: |
+          for i in {1..10}; do
+            if curl -fsS http://localhost:8000/health >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+      - name: Run smoke tests
+        run: ./scripts/smoke_test.sh
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
