@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import os
 
@@ -95,6 +95,37 @@ def log_surfaced_job(job_id: str, user_id: str, agent_id: str) -> None:
         conn.close()
 
 
+def log_application(job_id: str, user_id: str, agent_id: str) -> None:
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO applications (job_id, user_id, agent_id, ts)
+            VALUES (%s, %s, %s, NOW())
+            """,
+            (job_id, user_id, agent_id),
+        )
+        cur.execute("SELECT COUNT(*) FROM applications")
+        apps = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM surfaced_jobs")
+        surfaced = cur.fetchone()[0]
+        rate = 0.0 if surfaced == 0 else apps / surfaced
+        cur.execute(
+            """
+            INSERT INTO application_metrics (
+                ts, application_rate, application_volume
+            )
+            VALUES (NOW(), %s, %s)
+            """,
+            (rate, apps),
+        )
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
+
+
 def get_fit_accuracy(days: int = 7) -> float:
     conn = _get_conn()
     try:
@@ -139,3 +170,26 @@ def count_false_positives(days: int = 7) -> int:
     finally:
         conn.close()
     return count
+
+
+def get_application_conversion(days: int = 7) -> Tuple[float, int]:
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT application_rate, application_volume
+            FROM application_metrics
+            WHERE ts >= NOW() - INTERVAL %s
+            ORDER BY ts DESC
+            LIMIT 1
+            """,
+            (f"{days} days",),
+        )
+        row = cur.fetchone()
+        cur.close()
+    finally:
+        conn.close()
+    if not row:
+        return 0.0, 0
+    return float(row[0]), int(row[1])
