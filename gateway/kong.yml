@@ -32,3 +32,11 @@ services:
               add:
                 headers:
                   - "X-Through-Kong: true"
+
+  # JobSpy service (served via Kong at /jobs)
+  - name: jobspy
+    url: http://jobspy:8000
+    routes:
+      - name: jobspy-api
+        paths: ["/jobs"]
+        strip_path: false
