@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import Any, Tuple
 
+import psycopg2
+import yaml
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel
-import psycopg2
 from pymongo import MongoClient
 
 from .config import settings
@@ -16,6 +18,10 @@ class FeedbackIn(BaseModel):
     input: str
     output: str
     feedback: str
+
+
+class AgentRequest(BaseModel):
+    input: str
 
 
 @app.get("/health", response_class=JSONResponse)
@@ -80,6 +86,26 @@ def _pg_connect() -> psycopg2.extensions.connection:
         password=settings.pg_pass,
         dbname=settings.pg_db,
     )
+
+
+@app.get("/personas", response_class=JSONResponse)
+def list_personas() -> list[dict[str, Any]]:
+    """Expose the personas catalog for the frontend."""
+    cfg = (
+        Path(__file__).resolve().parents[2]
+        / "backend"
+        / "config"
+        / "personas.yml"
+    )
+    with cfg.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    return data.get("personas", [])
+
+
+@app.post("/agent/{persona}", response_class=JSONResponse)
+def invoke_agent(persona: str, body: AgentRequest) -> dict[str, str]:
+    """Echo the input for smoke testing purposes."""
+    return {"persona": persona, "output": body.input}
 
 
 @app.post("/feedback", response_class=JSONResponse)
