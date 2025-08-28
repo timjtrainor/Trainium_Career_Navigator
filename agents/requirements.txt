@@ -16,3 +16,4 @@ crewai==0.159.0
 # DB clients
 psycopg2-binary==2.9.10
 pymongo==4.14.1
+

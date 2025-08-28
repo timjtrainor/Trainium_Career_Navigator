@@ -2,12 +2,18 @@ from typing import Any, Tuple
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
+from pydantic import BaseModel
+from crewai import Agent
 import psycopg2
 from pymongo import MongoClient
 
 from .config import settings
 
 app = FastAPI(title="Trainium Agents API", version="0.1.0")
+
+
+class Prompt(BaseModel):
+    message: str
 
 @app.get("/health", response_class=JSONResponse)
 def health() -> dict[str, Any]:
@@ -97,6 +103,12 @@ def health_db() -> dict[str, Any]:
     mg = health_mongo()
     status = "ok" if pg["status"] == "ok" and mg["status"] == "ok" else "degraded"
     return {"status": status, "postgres": pg, "mongo": mg}
+
+
+@app.post("/api/agent/{persona}", response_class=JSONResponse)
+def run_agent(persona: str, prompt: Prompt) -> dict[str, str]:
+    agent = Agent(role=persona, goal="Echo user input", backstory="Mock agent")
+    return {"persona": agent.role, "echo": prompt.message}
 
 @app.get("/", response_class=PlainTextResponse)
 def root() -> str:
