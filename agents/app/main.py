@@ -1,13 +1,18 @@
+import logging
 from typing import Any, Tuple
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
+from pydantic import BaseModel
 import psycopg2
 from pymongo import MongoClient
 
 from .config import settings
+from .llm import LLMClient, Provider
 
 app = FastAPI(title="Trainium Agents API", version="0.1.0")
+logger = logging.getLogger(__name__)
+llm_client = LLMClient()
 
 @app.get("/health", response_class=JSONResponse)
 def health() -> dict[str, Any]:
@@ -97,6 +102,18 @@ def health_db() -> dict[str, Any]:
     mg = health_mongo()
     status = "ok" if pg["status"] == "ok" and mg["status"] == "ok" else "degraded"
     return {"status": status, "postgres": pg, "mongo": mg}
+
+
+class PersonaRequest(BaseModel):
+    provider: Provider = "openai"
+    prompt: str
+
+
+@app.post("/persona", response_class=JSONResponse)
+def run_persona(req: PersonaRequest) -> dict[str, str]:
+    text = llm_client.chat(req.provider, req.prompt)
+    logger.info("provider=%s response=%s", req.provider, text)
+    return {"provider": req.provider, "response": text}
 
 @app.get("/", response_class=PlainTextResponse)
 def root() -> str:

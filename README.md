@@ -80,7 +80,10 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
 ## 3) Health Checks
 - Frontend: Served through Kong at `/` (static Nginx placeholder page).
 - Agents: `GET /api/health` returns JSON with environment, DB hosts/ports, and detected LLM keys.
-- Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also connect using your local client to verify.
+- Persona tasks: `POST /api/persona` with `provider` and `prompt` fields routes work to
+  the selected LLM (OpenAI, Anthropic, or Gemini).
+- Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also
+  connect using your local client to verify.
 
 ---
 
