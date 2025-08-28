@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Tuple
 
 import psycopg2
+from psycopg2.extensions import cursor as PGCursor
 import yaml
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -110,6 +111,7 @@ def create_feedback(item: FeedbackIn) -> dict[str, Any]:
     conn = _pg_connect()
     with conn:
         with conn.cursor() as cur:
+            _ensure_feedback_table(cur)
             cur.execute(
                 "INSERT INTO feedback (persona, input, output, feedback) "
                 "VALUES (%s, %s, %s, %s) RETURNING id, created_at",
@@ -125,6 +127,7 @@ def list_feedback() -> list[dict[str, Any]]:
     conn = _pg_connect()
     with conn:
         with conn.cursor() as cur:
+            _ensure_feedback_table(cur)
             cur.execute(
                 "SELECT id, persona, input, output, feedback, created_at "
                 "FROM feedback ORDER BY id"
@@ -142,6 +145,18 @@ def list_feedback() -> list[dict[str, Any]]:
         }
         for r in rows
     ]
+
+
+def _ensure_feedback_table(cur: PGCursor) -> None:
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS feedback ("
+        "id SERIAL PRIMARY KEY, "
+        "persona TEXT NOT NULL, "
+        "input TEXT NOT NULL, "
+        "output TEXT NOT NULL, "
+        "feedback TEXT NOT NULL, "
+        "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())",
+    )
 
 
 @app.get("/health/postgres", response_class=JSONResponse)
