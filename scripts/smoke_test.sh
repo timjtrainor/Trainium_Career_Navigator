@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load variables from .env if available
+if [ -f ".env" ]; then
+  set -o allexport
+  source .env
+  set +o allexport
+fi
+
 BASE_URL=${BASE_URL:-http://localhost:8000}
 
 check() {
