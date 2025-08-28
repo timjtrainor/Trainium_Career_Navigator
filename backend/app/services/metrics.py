@@ -55,6 +55,25 @@ def get_error_rate(days: int = 7) -> float:
     return 0.0 if total == 0 else failures / total * 100
 
 
+def get_average_latency(days: int = 7) -> float:
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT AVG(response_time_ms)
+            FROM metrics
+            WHERE ts >= NOW() - INTERVAL %s
+            """,
+            (f"{days} days",),
+        )
+        avg = cur.fetchone()[0]
+        cur.close()
+    finally:
+        conn.close()
+    return float(avg or 0.0)
+
+
 def get_metrics(days: int = 7) -> List[Metric]:
     conn = _get_conn()
     try:
@@ -170,6 +189,11 @@ def count_false_positives(days: int = 7) -> int:
     finally:
         conn.close()
     return count
+
+
+def get_missed_opportunities() -> int:
+    """Placeholder for missed opportunities metric."""
+    return 0
 
 
 def get_application_conversion(days: int = 7) -> Tuple[float, int]:

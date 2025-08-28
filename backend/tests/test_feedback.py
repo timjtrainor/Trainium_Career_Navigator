@@ -30,8 +30,11 @@ def test_feedback_endpoints(monkeypatch) -> None:
         assert feedback.job_id == "job1"
         return sample
 
-    def fake_list(job_id=None):
+    def fake_list(job_id=None, agent_id=None, start_ts=None, end_ts=None):
         assert job_id == "job1"
+        assert agent_id == "agentA"
+        assert start_ts == now
+        assert end_ts is None
         return [sample]
 
     monkeypatch.setattr("backend.app.routes.feedback.save_feedback", fake_save)
@@ -51,7 +54,10 @@ def test_feedback_endpoints(monkeypatch) -> None:
     data = resp.json()
     assert data["job_id"] == "job1"
 
-    resp2 = client.get("/api/feedback", params={"job_id": "job1"})
+    resp2 = client.get(
+        "/api/feedback",
+        params={"job_id": "job1", "agent_id": "agentA", "start_ts": now.isoformat()},
+    )
     assert resp2.status_code == 200
     items = resp2.json()
     assert len(items) == 1
