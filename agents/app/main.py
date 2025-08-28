@@ -91,14 +91,11 @@ def _pg_connect() -> psycopg2.extensions.connection:
 @app.get("/personas", response_class=JSONResponse)
 def list_personas() -> list[dict[str, Any]]:
     """Expose the personas catalog for the frontend."""
-    cfg = (
-        Path(__file__).resolve().parents[2]
-        / "backend"
-        / "config"
-        / "personas.yml"
-    )
-    with cfg.open("r", encoding="utf-8") as fh:
-        data = yaml.safe_load(fh) or {}
+    cfg = Path(__file__).with_name("personas.yml")
+    data: dict[str, Any] = {}
+    if cfg.exists():
+        with cfg.open("r", encoding="utf-8") as fh:
+            data = yaml.safe_load(fh) or {}
     return data.get("personas", [])
 
 
