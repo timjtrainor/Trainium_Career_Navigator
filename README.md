@@ -34,7 +34,8 @@ MONGO_DB=trainium
 
 # === Kong (DB-less mode) ===
 KONG_LOG_LEVEL=info
-KONG_ADMIN_LISTEN=0.0.0.0:8001   # dev only; lock down in staging
+# Admin API bound to localhost; change to 0.0.0.0:8001 for host access in dev
+KONG_ADMIN_LISTEN=127.0.0.1:8001
 
 # === App ===
 ENVIRONMENT=local
@@ -47,7 +48,7 @@ ENVIRONMENT=local
 - **POSTGRES_HOST / POSTGRES_PORT / POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD**: Connection settings for the Postgres container.
 - **MONGO_HOST / MONGO_PORT / MONGO_DB**: Connection settings for the Mongo container.
 - **KONG_LOG_LEVEL**: Kong log verbosity (`info`, `debug`, etc.).
-- **KONG_ADMIN_LISTEN**: Admin API bind (enabled only in dev).
+- **KONG_ADMIN_LISTEN**: Admin API bind. Defaults to `127.0.0.1:8001` for safety; set to `0.0.0.0:8001` if you need host access in development.
 - **ENVIRONMENT**: Passed to the Agents service for environment-aware behavior.
 
 An **`.env.example`** is checked in with safe placeholders so others can copy it to `.env` quickly.
