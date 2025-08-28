@@ -2,12 +2,21 @@ from typing import Any, Tuple
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
+from pydantic import BaseModel
 import psycopg2
 from pymongo import MongoClient
 
 from .config import settings
 
 app = FastAPI(title="Trainium Agents API", version="0.1.0")
+
+
+class FeedbackIn(BaseModel):
+    persona: str
+    input: str
+    output: str
+    feedback: str
+
 
 @app.get("/health", response_class=JSONResponse)
 def health() -> dict[str, Any]:
@@ -63,6 +72,55 @@ def _check_mongo() -> Tuple[bool, str | None]:
         return False, str(exc)
 
 
+def _pg_connect() -> psycopg2.extensions.connection:
+    return psycopg2.connect(
+        host=settings.pg_host,
+        port=settings.pg_port,
+        user=settings.pg_user,
+        password=settings.pg_pass,
+        dbname=settings.pg_db,
+    )
+
+
+@app.post("/feedback", response_class=JSONResponse)
+def create_feedback(item: FeedbackIn) -> dict[str, Any]:
+    conn = _pg_connect()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO feedback (persona, input, output, feedback) "
+                "VALUES (%s, %s, %s, %s) RETURNING id, created_at",
+                (item.persona, item.input, item.output, item.feedback),
+            )
+            fid, created = cur.fetchone()
+    conn.close()
+    return {"id": fid, "created_at": created.isoformat()}
+
+
+@app.get("/feedback", response_class=JSONResponse)
+def list_feedback() -> list[dict[str, Any]]:
+    conn = _pg_connect()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, persona, input, output, feedback, created_at "
+                "FROM feedback ORDER BY id"
+            )
+            rows = cur.fetchall()
+    conn.close()
+    return [
+        {
+            "id": r[0],
+            "persona": r[1],
+            "input": r[2],
+            "output": r[3],
+            "feedback": r[4],
+            "created_at": r[5].isoformat(),
+        }
+        for r in rows
+    ]
+
+
 @app.get("/health/postgres", response_class=JSONResponse)
 def health_postgres() -> dict[str, Any]:
     ok, err = _check_postgres()
@@ -98,6 +156,8 @@ def health_db() -> dict[str, Any]:
     status = "ok" if pg["status"] == "ok" and mg["status"] == "ok" else "degraded"
     return {"status": status, "postgres": pg, "mongo": mg}
 
+
 @app.get("/", response_class=PlainTextResponse)
 def root() -> str:
     return "Trainium Agents API. See /health"
+
