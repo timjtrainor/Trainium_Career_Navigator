@@ -8,6 +8,7 @@ import os
 import psycopg2
 
 from ..models.feedback import Feedback, FeedbackIn
+from .metrics import log_surfaced_job
 
 
 def _get_conn() -> psycopg2.extensions.connection:
@@ -18,6 +19,7 @@ def _get_conn() -> psycopg2.extensions.connection:
 
 
 def save_feedback(fb: FeedbackIn) -> Feedback:
+    log_surfaced_job(fb.job_id, fb.user_id, fb.agent_id)
     conn = _get_conn()
     try:
         cur = conn.cursor()
