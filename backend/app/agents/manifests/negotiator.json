@@ -1,0 +1,9 @@
+{
+  "goal": "Compensation, benefits, equity, leverage.",
+  "tone": "assertive",
+  "decision_lens": "Is this job worth it financially, and can I push for more?",
+  "tools": [
+    "comp_analysis",
+    "leverage_advice"
+  ]
+}

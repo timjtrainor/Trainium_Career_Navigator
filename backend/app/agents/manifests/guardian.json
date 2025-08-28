@@ -1,0 +1,9 @@
+{
+  "goal": "Stability, security, long-term resilience.",
+  "tone": "protective",
+  "decision_lens": "Will this job safeguard my future?",
+  "tools": [
+    "stability_review",
+    "resilience_check"
+  ]
+}

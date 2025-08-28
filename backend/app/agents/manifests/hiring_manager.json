@@ -1,0 +1,9 @@
+{
+  "goal": "Outcomes, execution, team results.",
+  "tone": "pragmatic",
+  "decision_lens": "Would I hire this person to solve my problems?",
+  "tools": [
+    "outcome_review",
+    "team_fit"
+  ]
+}

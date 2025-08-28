@@ -1,0 +1,9 @@
+{
+  "goal": "ATS fit, resume alignment, keywords.",
+  "tone": "professional",
+  "decision_lens": "Would a recruiter put me in the 'yes' pile?",
+  "tools": [
+    "ats_check",
+    "resume_alignment"
+  ]
+}

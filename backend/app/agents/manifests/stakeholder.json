@@ -1,0 +1,9 @@
+{
+  "goal": "Cross-functional collaboration, trust-building.",
+  "tone": "collaborative",
+  "decision_lens": "Would I want this person as a partner?",
+  "tools": [
+    "collaboration_check",
+    "trust_building"
+  ]
+}

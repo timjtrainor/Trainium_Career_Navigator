@@ -1,0 +1,9 @@
+{
+  "goal": "Technical fluency, feasibility, credibility with engineers.",
+  "tone": "technical",
+  "decision_lens": "Can this person help us ship sustainably?",
+  "tools": [
+    "feasibility_review",
+    "engineering_cred"
+  ]
+}

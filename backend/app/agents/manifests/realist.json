@@ -1,0 +1,9 @@
+{
+  "goal": "Logistics, commute, cost of living, visas.",
+  "tone": "practical",
+  "decision_lens": "Can this actually work in real life?",
+  "tools": [
+    "logistics_check",
+    "cost_of_living"
+  ]
+}

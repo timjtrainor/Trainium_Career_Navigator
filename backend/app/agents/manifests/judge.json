@@ -1,0 +1,9 @@
+{
+  "goal": "Integration of all perspectives, final verdict.",
+  "tone": "balanced",
+  "decision_lens": "Considering everything, is this role truly worth pursuing?",
+  "tools": [
+    "verdict_synthesis",
+    "tradeoff_analysis"
+  ]
+}

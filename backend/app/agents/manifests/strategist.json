@@ -1,0 +1,9 @@
+{
+  "goal": "Industry shifts, AI adoption, macro trends.",
+  "tone": "forward_looking",
+  "decision_lens": "Is this role positioned for the future?",
+  "tools": [
+    "trend_analysis",
+    "ai_adoption"
+  ]
+}
