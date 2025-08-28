@@ -1,0 +1,93 @@
+version: "3.9"
+
+name: trainium
+
+services:
+  kong:
+    image: kong:3.6
+    depends_on:
+      - frontend
+      - agents
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: "/etc/kong/kong.yml"
+      KONG_LOG_LEVEL: "${KONG_LOG_LEVEL}"
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "${KONG_ADMIN_LISTEN}"
+      KONG_PLUGINS: "bundled,cors,request-transformer"
+    volumes:
+      - ./gateway/kong.yml:/etc/kong/kong.yml:ro
+    ports:
+      - "8000:8000"   # public proxy
+      - "8001:8001"   # admin api (dev only)
+    networks: [trainium-net]
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    expose:
+      - "80"
+    networks: [trainium-net]
+    restart: unless-stopped
+
+  agents:
+    build: ./agents
+    env_file:
+      - .env
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MONGO_HOST: mongo
+      MONGO_PORT: ${MONGO_PORT}
+      # LLM keys (also pulled from env_file)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    depends_on:
+      - postgres
+      - mongo
+    expose:
+      - "8000"
+    networks: [trainium-net]
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers
+
+  postgres:
+    image: postgres:16
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"      # expose for local tools (optional)
+    networks: [trainium-net]
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    env_file:
+      - .env
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - "27017:27017"    # expose for local tools (optional)
+    networks: [trainium-net]
+    restart: unless-stopped
+
+networks:
+  trainium-net:
+
+volumes:
+  pgdata:
+  mongodata:

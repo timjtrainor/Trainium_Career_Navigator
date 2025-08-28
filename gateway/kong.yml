@@ -1,0 +1,34 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  # Frontend (served via Kong at /)
+  - name: frontend
+    url: http://frontend:80
+    routes:
+      - name: frontend-root
+        paths: ["/"]
+        strip_path: false
+
+  # Agents API (served via Kong at /api)
+  - name: agents
+    url: http://agents:8000
+    routes:
+      - name: agents-api
+        paths: ["/api"]
+        strip_path: true
+        methods: ["GET","POST","OPTIONS"]
+        plugins:
+          - name: cors
+            config:
+              origins: ["*"]
+              methods: ["GET","POST","OPTIONS"]
+              headers: ["Authorization","Content-Type"]
+              exposed_headers: ["*"]
+              credentials: false
+              max_age: 3600
+          - name: request-transformer
+            config:
+              add:
+                headers:
+                  - "X-Through-Kong: true"
