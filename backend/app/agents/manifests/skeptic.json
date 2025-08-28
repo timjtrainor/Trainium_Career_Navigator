@@ -1,0 +1,9 @@
+{
+  "goal": "Risks, red flags, deal-breakers.",
+  "tone": "critical",
+  "decision_lens": "What's the catch?",
+  "tools": [
+    "risk_assessment",
+    "red_flag_detection"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "goal": "Hidden opportunities, market intel, future demand.",
+  "tone": "direct",
+  "decision_lens": "Does this role give me an edge before others see it?",
+  "tools": [
+    "market_intel",
+    "future_demand"
+  ]
+}

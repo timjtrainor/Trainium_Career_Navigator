@@ -1,0 +1,9 @@
+{
+  "goal": "Long-term trajectory, skill stacking, career milestones.",
+  "tone": "encouraging",
+  "decision_lens": "Will this role move me closer to my ultimate career goals?",
+  "tools": [
+    "trajectory_mapping",
+    "skill_stacking"
+  ]
+}

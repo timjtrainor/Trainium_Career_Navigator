@@ -1,0 +1,9 @@
+{
+  "goal": "Salary benchmarks, company health, market growth.",
+  "tone": "analytical",
+  "decision_lens": "Does the data suggest this is a smart move?",
+  "tools": [
+    "salary_benchmarks",
+    "company_metrics"
+  ]
+}
