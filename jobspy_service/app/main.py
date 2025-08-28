@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
@@ -42,6 +43,40 @@ logger = logging.getLogger(__name__)
 # Simple in-memory cache for search results
 CACHE_TTL = int(os.getenv("JOBSPY_CACHE_TTL_SECONDS", "600"))
 _CACHE: dict[tuple[str, str], tuple[float, JobSearchResponse]] = {}
+
+
+class IngestionRun(BaseModel):
+    """Record of a single ingestion run."""
+
+    board: str
+    fetched: int
+    normalized: int
+    unique_new: int
+    errors: int
+    timestamp: float
+
+
+# Board-specific scheduling configuration
+BOARD_CONFIG: dict[str, dict[str, Any]] = {
+    "indeed": {
+        "enabled": True,
+        "cadence": "4h",
+        "results_wanted_max": 50,
+        "hours_old": 24,
+        "delay_seconds": 0,
+    },
+    "linkedin": {
+        "enabled": True,
+        "cadence": "daily",
+        "results_wanted_max": 50,
+        "hours_old": 24,
+        "delay_seconds": 0,
+    },
+}
+
+# Track last run time for each board and all run records
+_LAST_RUN: dict[str, float | None] = {b: None for b in BOARD_CONFIG}
+INGESTION_RUNS: list[IngestionRun] = []
 
 
 def scrape_jobs(source: str, *, search_term: str | None = None) -> dict[str, Any]:
@@ -126,4 +161,70 @@ def search_jobs(
     response = JobSearchResponse(source=source_l, jobs=jobs)
     _CACHE[cache_key] = (time.time(), response)
     return response
+
+
+def _interval_for(board: str) -> float:
+    cadence = BOARD_CONFIG[board]["cadence"].lower()
+    return 4 * 3600 if cadence == "4h" else 24 * 3600
+
+
+def _due(board: str, *, now: float | None = None) -> bool:
+    now = now or time.time()
+    last = _LAST_RUN.get(board)
+    return last is None or now - last >= _interval_for(board)
+
+
+def ingest_board(board: str, *, now: float | None = None) -> IngestionRun:
+    cfg = BOARD_CONFIG[board]
+    time.sleep(cfg.get("delay_seconds", 0))
+    raw = scrape_jobs(board)
+    jobs = raw.get("jobs", [])
+    jobs = jobs[: cfg.get("results_wanted_max", len(jobs))]
+    normalized_jobs = [normalize_job(j) for j in jobs]
+    run = IngestionRun(
+        board=board,
+        fetched=len(jobs),
+        normalized=len(normalized_jobs),
+        unique_new=len(normalized_jobs),
+        errors=0,
+        timestamp=now or time.time(),
+    )
+    INGESTION_RUNS.append(run)
+    _LAST_RUN[board] = run.timestamp
+    return run
+
+
+def run_all_due(*, now: float | None = None) -> list[IngestionRun]:
+    runs: list[IngestionRun] = []
+    now = now or time.time()
+    for board, cfg in BOARD_CONFIG.items():
+        if cfg.get("enabled") and _due(board, now=now):
+            runs.append(ingest_board(board, now=now))
+    return runs
+
+
+@app.post("/ingest/run", response_model=IngestionRun)
+def run_single(board: str) -> IngestionRun:
+    if board not in BOARD_CONFIG:
+        raise HTTPException(status_code=404, detail="unknown board")
+    if not BOARD_CONFIG[board].get("enabled", True):
+        raise HTTPException(status_code=400, detail="board disabled")
+    return ingest_board(board)
+
+
+@app.post("/ingest/run-all", response_model=list[IngestionRun])
+def run_all_endpoint() -> list[IngestionRun]:
+    return run_all_due()
+
+
+async def _scheduler_loop() -> None:
+    interval = int(os.getenv("INGEST_SCHEDULER_INTERVAL_SECONDS", "3600"))
+    while True:
+        run_all_due()
+        await asyncio.sleep(interval)
+
+
+@app.on_event("startup")
+async def _startup() -> None:  # pragma: no cover - background task
+    asyncio.create_task(_scheduler_loop())
 
