@@ -10,7 +10,7 @@ services:
     depends_on:
       - frontend
       - agents
-      - jobspy
+      - jobspy_service
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: "/etc/kong/kong.yml"
@@ -65,8 +65,8 @@ services:
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers
 
-  jobspy:
-    build: ./jobspy
+  jobspy_service:
+    build: ./jobspy_service
     expose:
       - "8000"
     networks: [trainium-net]
