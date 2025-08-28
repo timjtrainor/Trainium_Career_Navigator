@@ -39,6 +39,10 @@ app = FastAPI(title="JobSpy API", version="0.1.0")
 
 logger = logging.getLogger(__name__)
 
+# Simple in-memory cache for search results
+CACHE_TTL = int(os.getenv("JOBSPY_CACHE_TTL_SECONDS", "600"))
+_CACHE: dict[tuple[str, str], tuple[float, JobSearchResponse]] = {}
+
 
 def scrape_jobs(source: str, *, search_term: str | None = None) -> dict[str, Any]:
     """Invoke the JobSpy scraping library for the given source."""
@@ -108,9 +112,18 @@ def search_jobs(
     else:
         term = search_term
 
+    cache_key = (source_l, term or "")
+    now = time.time()
+    cached = _CACHE.get(cache_key)
+    if cached and now - cached[0] < CACHE_TTL:
+        logger.info("Returning cached result for %s", cache_key)
+        return cached[1]
+
     logger.info("Applied delay of %ss before scrape", delay)
     time.sleep(delay)
     raw = scrape_jobs(source_l, search_term=term)
     jobs = [normalize_job(j) for j in raw.get("jobs", [])]
-    return JobSearchResponse(source=source_l, jobs=jobs)
+    response = JobSearchResponse(source=source_l, jobs=jobs)
+    _CACHE[cache_key] = (time.time(), response)
+    return response
 

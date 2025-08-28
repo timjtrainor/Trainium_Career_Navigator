@@ -5,6 +5,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+import jobspy_service.app.main as main
 from jobspy_service.app.main import app
 
 
@@ -128,4 +129,69 @@ def test_normalizes_output_for_multiple_sources(monkeypatch):
             assert job["company"] == "Beta"
             assert job["location"] == "SF"
             assert job["remote_status"] == "remote"
+
+
+def test_repeat_query_uses_cache(monkeypatch):
+    main._CACHE.clear()
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
+    monkeypatch.setattr(main, "CACHE_TTL", 600)
+
+    calls = []
+
+    def fake_sleep(delay: float) -> None:
+        calls.append(("sleep", delay))
+
+    def fake_scrape(source: str, *, search_term: str | None = None):
+        calls.append(("scrape", source, search_term))
+        return {"jobs": [], "source": source}
+
+    with patch("jobspy_service.app.main.time.sleep", side_effect=fake_sleep):
+        with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
+            client.get(
+                "/jobs/search", params={"source": "indeed", "search_term": "python"}
+            )
+            client.get(
+                "/jobs/search", params={"source": "indeed", "search_term": "python"}
+            )
+
+    assert calls == [("sleep", 2), ("scrape", "indeed", "python")]
+
+
+def test_cache_expires_after_ttl(monkeypatch):
+    main._CACHE.clear()
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
+    monkeypatch.setattr(main, "CACHE_TTL", 5)
+
+    calls: list[tuple[str, object]] = []
+    current = {"t": 0.0}
+
+    def fake_time() -> float:
+        return current["t"]
+
+    def fake_sleep(delay: float) -> None:
+        calls.append(("sleep", delay))
+
+    def fake_scrape(source: str, *, search_term: str | None = None):
+        calls.append(("scrape", source, search_term))
+        return {"jobs": [], "source": source}
+
+    with patch("jobspy_service.app.main.time.sleep", side_effect=fake_sleep):
+        with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
+            with patch("jobspy_service.app.main.time.time", side_effect=fake_time):
+                client.get(
+                    "/jobs/search", params={"source": "indeed", "search_term": "python"}
+                )
+                calls.clear()
+                client.get(
+                    "/jobs/search", params={"source": "indeed", "search_term": "python"}
+                )
+                assert calls == []
+                current["t"] = 10.0
+                client.get(
+                    "/jobs/search", params={"source": "indeed", "search_term": "python"}
+                )
+
+    assert calls == [("sleep", 2), ("scrape", "indeed", "python")]
 

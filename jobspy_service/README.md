@@ -26,7 +26,9 @@ regardless of the upstream source. Each job contains the following fields:
 | `JOBSPY_SOURCES` | Comma-separated list of allowed providers. | `indeed,linkedin,google` |
 | `JOBSPY_ENABLED` | Toggle scraping feature. | `true` |
 | `JOBSPY_DELAY_SECONDS` | Seconds to wait before making each scraping request. | `2` |
+| `JOBSPY_CACHE_TTL_SECONDS` | Seconds to cache job search results. | `600` |
 
 The delay helps avoid triggering provider rate limits. Adjust the value in your
-`.env` file if necessary.
+`.env` file if necessary. Recent search results are cached in-memory for the
+configured TTL to speed up repeat queries.
 
