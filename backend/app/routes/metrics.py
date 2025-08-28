@@ -6,18 +6,57 @@ from fastapi import APIRouter
 
 from ..models.application import ApplicationIn
 from ..models.metric import Metric
+from ..models.metrics_summary import (
+    BusinessMetrics,
+    OperationalMetrics,
+    UserMetrics,
+)
 from ..models.surfaced_job import SurfacedJobIn
 from ..services.metrics import (
     count_false_positives,
+    get_application_conversion,
+    get_average_latency,
     get_error_rate,
     get_fit_accuracy,
     get_metrics,
-    get_application_conversion,
-    log_surfaced_job,
+    get_missed_opportunities,
     log_application,
+    log_surfaced_job,
 )
 
 router = APIRouter()
+
+
+@router.get("/api/metrics/operational", response_model=OperationalMetrics)
+def operational_metrics() -> OperationalMetrics:
+    """Return operational metrics."""
+    rate = get_error_rate()
+    latency = get_average_latency()
+    return OperationalMetrics(error_rate=rate, avg_latency_ms=latency)
+
+
+@router.get("/api/metrics/user", response_model=UserMetrics)
+def user_metrics() -> UserMetrics:
+    """Return user experience metrics."""
+    acc = get_fit_accuracy()
+    false = count_false_positives()
+    missed = get_missed_opportunities()
+    return UserMetrics(
+        fit_accuracy=acc,
+        false_positives=false,
+        missed_opportunities=missed,
+    )
+
+
+@router.get("/api/metrics/business", response_model=BusinessMetrics)
+def business_metrics() -> BusinessMetrics:
+    """Return business performance metrics."""
+    rate, volume = get_application_conversion()
+    return BusinessMetrics(
+        application_rate=rate,
+        application_volume=volume,
+        conversion_ratio=rate,
+    )
 
 
 @router.get("/api/metrics/error_rate")

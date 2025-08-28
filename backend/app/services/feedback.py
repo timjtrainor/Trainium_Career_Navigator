@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import List, Optional
-
 from datetime import datetime
 import os
 
@@ -45,28 +44,34 @@ def save_feedback(fb: FeedbackIn) -> Feedback:
     return Feedback(timestamp=ts, **fb.dict())
 
 
-def list_feedback(job_id: Optional[str] = None) -> List[Feedback]:
+def list_feedback(
+    job_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    start_ts: Optional[datetime] = None,
+    end_ts: Optional[datetime] = None,
+) -> List[Feedback]:
     conn = _get_conn()
     try:
         cur = conn.cursor()
+        query = "SELECT job_id, agent_id, user_id, vote, comment, ts FROM feedback"
+        conditions: List[str] = []
+        params: List[object] = []
         if job_id:
-            cur.execute(
-                """
-                SELECT job_id, agent_id, user_id, vote, comment, ts
-                FROM feedback
-                WHERE job_id = %s
-                ORDER BY ts DESC
-                """,
-                (job_id,),
-            )
-        else:
-            cur.execute(
-                """
-                SELECT job_id, agent_id, user_id, vote, comment, ts
-                FROM feedback
-                ORDER BY ts DESC
-                """
-            )
+            conditions.append("job_id = %s")
+            params.append(job_id)
+        if agent_id:
+            conditions.append("agent_id = %s")
+            params.append(agent_id)
+        if start_ts:
+            conditions.append("ts >= %s")
+            params.append(start_ts)
+        if end_ts:
+            conditions.append("ts <= %s")
+            params.append(end_ts)
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY ts DESC"
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
         cur.close()
     finally:
