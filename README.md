@@ -7,6 +7,8 @@ This guide explains required **environment variables** and **startup steps** for
 - Agents API (FastAPI)
 - PostgreSQL (relational)
 - MongoDB (document)
+  
+Persistent data for Postgres and Mongo is stored in named Docker volumes (`pgdata`, `mongodata`) so database contents survive restarts.
 
 ---
 
