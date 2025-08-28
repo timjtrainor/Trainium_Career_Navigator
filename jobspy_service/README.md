@@ -5,6 +5,20 @@ is named `jobspy_service` to avoid clashing with the upstream library. Supported
 job sources include **Indeed**, **LinkedIn**, and **Google Jobs**. Providers are
 controlled via the `JOBSPY_SOURCES` allowlist environment variable.
 
+## Normalized job schema
+
+The `/jobs/search` endpoint returns jobs using a consistent JSON structure
+regardless of the upstream source. Each job contains the following fields:
+
+| Field          | Description                  |
+|----------------|------------------------------|
+| `title`        | Title of the position        |
+| `company`      | Company offering the role    |
+| `description`  | Short description of the job |
+| `location`     | Location of the role         |
+| `url`          | Link to the job posting      |
+| `remote_status`| Remote/onsite status         |
+
 ## Environment variables
 
 | Variable | Description | Default |
