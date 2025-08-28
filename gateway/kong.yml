@@ -34,9 +34,9 @@ services:
                   - "X-Through-Kong: true"
 
   # JobSpy service (served via Kong at /jobs)
-  - name: jobspy
-    url: http://jobspy:8000
+  - name: jobspy_service
+    url: http://jobspy_service:8000
     routes:
-      - name: jobspy-api
+      - name: jobspy-service-api
         paths: ["/jobs"]
         strip_path: false

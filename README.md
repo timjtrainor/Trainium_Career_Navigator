@@ -156,7 +156,7 @@ trainium/
 ---
 
 ## 8) Next
-- Add JobSpy microservice and route via Kong at `/jobs`.
+- Add jobspy_service microservice and route via Kong at `/jobs`.
 - Introduce auth (JWT/OIDC) and rate limiting in Kong for staging.
 - Add observability (structured logs, metrics) once the stack is stable.
 
