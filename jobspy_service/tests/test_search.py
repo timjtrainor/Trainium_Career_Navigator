@@ -73,3 +73,59 @@ def test_google_scrape_with_delay(monkeypatch):
     assert body["source"] == "google"
     assert "jobs" in body
 
+
+def test_normalizes_output_for_multiple_sources(monkeypatch):
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed,linkedin")
+
+    raw_jobs = {
+        "indeed": [
+            {
+                "job_title": "Engineer",
+                "company": "Acme",
+                "job_description": "Build stuff",
+                "city": "NY",
+                "job_url": "http://indeed/job1",
+                "is_remote": True,
+            }
+        ],
+        "linkedin": [
+            {
+                "title": "Developer",
+                "company_name": "Beta",
+                "description": "Write code",
+                "location": "SF",
+                "url": "http://linkedin/job2",
+                "remote": "remote",
+            }
+        ],
+    }
+
+    def fake_scrape(source: str, *, search_term: str | None = None):
+        return {"jobs": raw_jobs[source], "source": source}
+
+    for src in ("indeed", "linkedin"):
+        with patch("jobspy_service.app.main.scrape_jobs", side_effect=fake_scrape):
+            response = client.get("/jobs/search", params={"source": src})
+        assert response.status_code == 200
+        job = response.json()["jobs"][0]
+        assert set(job) == {
+            "title",
+            "company",
+            "description",
+            "location",
+            "url",
+            "remote_status",
+        }
+
+        if src == "indeed":
+            assert job["title"] == "Engineer"
+            assert job["company"] == "Acme"
+            assert job["location"] == "NY"
+            assert job["remote_status"] == "remote"
+        else:
+            assert job["title"] == "Developer"
+            assert job["company"] == "Beta"
+            assert job["location"] == "SF"
+            assert job["remote_status"] == "remote"
+
