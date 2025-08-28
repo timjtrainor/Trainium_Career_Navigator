@@ -156,3 +156,19 @@ trainium/
 - Add JobSpy microservice and route via Kong at `/jobs`.
 - Introduce auth (JWT/OIDC) and rate limiting in Kong for staging.
 - Add observability (structured logs, metrics) once the stack is stable.
+
+---
+
+## 🔮 Optional: Adding a GUI for Kong
+
+Right now this stack runs **Kong in DB-less mode** with a declarative `gateway/kong.yml`.  
+This is lean, Git-driven, and works great for CI/CD.
+
+If in the future you need a **GUI for Kong**:
+
+- **Konga (open source):** Community UI for managing Kong.  
+  ⚠️ Requires running Kong in **Postgres DB mode** instead of DB-less.  
+  You can then connect Konga at `http://localhost:1337` and view/manage routes, services, and plugins.  
+- **Kong Manager (Enterprise):** Official paid UI from Kong Inc.  
+- **deck (CLI tool):** Use `deck sync` to push `kong.yml` into a DB-backed Kong, or `deck dump` to export GUI-made changes back into Git.
+👉 Recommendation: keep `kong.yml` as the **source of truth** in Git, and only use a GUI for inspection or quick experiments.  
