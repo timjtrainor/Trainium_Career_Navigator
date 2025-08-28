@@ -54,8 +54,10 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
     depends_on:
-      - postgres
-      - mongo
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
     expose:
       - "8000"
     networks: [trainium-net]
@@ -76,6 +78,11 @@ services:
       - "5432:5432"      # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongo:
     image: mongo:7
@@ -89,6 +96,11 @@ services:
       - "27017:27017"    # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   trainium-net:
