@@ -22,6 +22,13 @@ MOTIVATIONAL_PERSONAS = [
     "adventurer",
 ]
 
+DECISION_PERSONAS = [
+    "visionary",
+    "realist",
+    "guardian",
+    "judge",
+]
+
 
 class PersonaLLM(BaseLLM):
     """Deterministic LLM used for persona simulations."""
@@ -82,13 +89,13 @@ def _parse_output(raw: str) -> Tuple[bool, str]:
     return vote, rationale
 
 
-def evaluate_job(job_id: str) -> List[PersonaEvaluation]:
+def _evaluate_persona_set(job_id: str, persona_ids: List[str]) -> List[PersonaEvaluation]:
     conn = _get_conn()
     results: List[PersonaEvaluation] = []
     agents = _build_agents(job_id)
     try:
         cur = conn.cursor()
-        for persona_id in MOTIVATIONAL_PERSONAS:
+        for persona_id in persona_ids:
             task = Task(
                 description=(
                     "Consult other personas in the crew and evaluate the job. "
@@ -127,3 +134,11 @@ def evaluate_job(job_id: str) -> List[PersonaEvaluation]:
     finally:
         conn.close()
     return results
+
+
+def evaluate_job(job_id: str) -> List[PersonaEvaluation]:
+    return _evaluate_persona_set(job_id, MOTIVATIONAL_PERSONAS)
+
+
+def evaluate_decision_personas(job_id: str) -> List[PersonaEvaluation]:
+    return _evaluate_persona_set(job_id, DECISION_PERSONAS)
