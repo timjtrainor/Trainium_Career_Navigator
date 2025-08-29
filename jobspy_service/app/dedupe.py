@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Sequence
+import hashlib
 import os
+import re
 
 import numpy as np
 
@@ -23,6 +25,39 @@ _MODEL = (
     if SentenceTransformer is not None
     else None
 )
+
+COMPANY_ALIASES: dict[str, str] = {
+    "acme inc": "acme",
+    "acme incorporated": "acme",
+}
+
+_STOP_WORDS = {"and", "the", "a", "an", "of", "for", "with"}
+
+
+def _stem(word: str) -> str:
+    for suffix in ("ing", "ers", "er", "ed", "es", "s"):
+        if word.endswith(suffix) and len(word) > len(suffix) + 2:
+            return word[: -len(suffix)]
+    return word
+
+
+def _normalize(text: str) -> str:
+    text = re.sub(r"[^\w\s]", " ", text.lower())
+    words = [_stem(w) for w in text.split() if w and w not in _STOP_WORDS]
+    return " ".join(words)
+
+
+def _canonical_company(name: str | None) -> str:
+    base = re.sub(r"[^\w\s]", " ", (name or "").lower()).strip()
+    alias = COMPANY_ALIASES.get(base, base)
+    return _normalize(alias)
+
+
+def _hash(job: dict) -> str:
+    title = _normalize(job.get("title", ""))
+    company = _canonical_company(job.get("company"))
+    key = f"{title}|{company}"
+    return hashlib.sha1(key.encode()).hexdigest()
 
 
 @dataclass
@@ -88,7 +123,12 @@ def dedupe_jobs(
     cfg = config or DedupConfig.from_env()
     kept: list[dict] = []
     embeddings: list[np.ndarray] = []
+    seen: set[str] = set()
     for job in jobs:
+        job_hash = _hash(job)
+        if job_hash in seen:
+            continue
+        seen.add(job_hash)
         emb = _embed(job)
         threshold = (
             cfg.big_company_threshold
