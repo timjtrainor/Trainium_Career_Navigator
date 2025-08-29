@@ -1,0 +1,23 @@
+[
+  {
+    "id": "job1",
+    "title": "Widget Engineer",
+    "company": "Acme Inc.",
+    "description": "Build widgets",
+    "url": "http://a"
+  },
+  {
+    "id": "job1b",
+    "title": "Widget Engineer",
+    "company": "Acme Incorporated",
+    "description": "Design widgets",
+    "url": "http://b"
+  },
+  {
+    "id": "job2",
+    "title": "Data Scientist",
+    "company": "Data Corp",
+    "description": "Analyze data",
+    "url": "http://c"
+  }
+]
