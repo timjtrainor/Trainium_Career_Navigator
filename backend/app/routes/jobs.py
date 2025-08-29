@@ -1,34 +1,58 @@
 from __future__ import annotations
 
-from datetime import datetime
+from math import ceil
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..models.job import Job, JobDetail
-from ..services.jobs import get_job_detail, list_unique_jobs
+from ..models.job import (
+    JobDetail,
+    JobListResponse,
+    JobOut,
+    JobCreate,
+    JobCreateResponse,
+)
+from ..services.jobs import create_job, get_job_detail, list_unique_jobs
 
 router = APIRouter()
 
 
-@router.get("/api/jobs/unique", response_model=List[Job])
+@router.get("/api/jobs/unique", response_model=JobListResponse)
 def unique_jobs(
     query: str | None = None,
     company: str | None = None,
-    source: str | None = None,
-    since: datetime | None = Query(default=None, description="ISO timestamp"),
-    limit: int = 50,
-    offset: int = 0,
-) -> List[Job]:
+    source: List[str] | None = Query(default=None),
+    since: str | None = Query(default=None, description="Relative window"),
+    hide: List[str] | None = Query(default=None),
+    page: int = 1,
+) -> JobListResponse:
     """List jobs with optional filtering."""
 
-    return list_unique_jobs(
+    jobs, total = list_unique_jobs(
         query=query,
         company=company,
-        source=source,
+        sources=source,
         since=since,
-        limit=limit,
-        offset=offset,
+        hide=hide,
+        page=page,
+        page_size=50,
+    )
+    page_count = ceil(total / 50) if total else 0
+    data = [
+        JobOut(
+            id=j.job_id,
+            title=j.title,
+            company=j.company,
+            url=j.url,
+            source=j.source,
+            updated_at=j.updated_at,
+            decision=j.decision,
+        )
+        for j in jobs
+    ]
+    return JobListResponse(
+        data=data,
+        meta={"page": page, "page_count": page_count, "total": total},
     )
 
 
@@ -40,3 +64,13 @@ def job_detail(job_id: str) -> JobDetail:
     if not job:
         raise HTTPException(status_code=404, detail="job not found")
     return job
+
+
+@router.post("/api/jobs", response_model=JobCreateResponse, status_code=201)
+def log_job(payload: JobCreate) -> JobCreateResponse:
+    """Log a job discovered externally."""
+
+    try:
+        return create_job(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
