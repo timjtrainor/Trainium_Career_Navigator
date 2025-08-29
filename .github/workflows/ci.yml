@@ -1,8 +1,9 @@
 name: CI
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]  # or remove this section if you only need PR runs
 
 jobs:
   smoke:
