@@ -29,7 +29,11 @@ async def test_run_records_ingestion(monkeypatch, client):
     body = response.json()
     assert body["board"] == "demo"
     assert body["fetched"] == 1
+    assert "run_id" in body
     assert len(main.INGESTION_RUNS) == 1
+    list_resp = await client.get("/ingest/runs")
+    runs = list_resp.json()
+    assert any(r["run_id"] == body["run_id"] for r in runs)
 
 
 @pytest.mark.anyio
