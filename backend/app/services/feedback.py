@@ -47,6 +47,7 @@ def save_feedback(fb: FeedbackIn) -> Feedback:
 def list_feedback(
     job_id: Optional[str] = None,
     agent_id: Optional[str] = None,
+    user_id: Optional[str] = None,
     start_ts: Optional[datetime] = None,
     end_ts: Optional[datetime] = None,
 ) -> List[Feedback]:
@@ -62,6 +63,9 @@ def list_feedback(
         if agent_id:
             conditions.append("agent_id = %s")
             params.append(agent_id)
+        if user_id:
+            conditions.append("user_id = %s")
+            params.append(user_id)
         if start_ts:
             conditions.append("ts >= %s")
             params.append(start_ts)
