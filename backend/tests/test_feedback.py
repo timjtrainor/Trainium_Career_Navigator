@@ -30,9 +30,10 @@ def test_feedback_endpoints(monkeypatch) -> None:
         assert feedback.job_id == "job1"
         return sample
 
-    def fake_list(job_id=None, agent_id=None, start_ts=None, end_ts=None):
+    def fake_list(job_id=None, agent_id=None, user_id=None, start_ts=None, end_ts=None):
         assert job_id == "job1"
         assert agent_id == "agentA"
+        assert user_id == "userX"
         assert start_ts == now
         assert end_ts is None
         return [sample]
@@ -56,7 +57,12 @@ def test_feedback_endpoints(monkeypatch) -> None:
 
     resp2 = client.get(
         "/api/feedback",
-        params={"job_id": "job1", "agent_id": "agentA", "start_ts": now.isoformat()},
+        params={
+            "job_id": "job1",
+            "agent_id": "agentA",
+            "user_id": "userX",
+            "start_ts": now.isoformat(),
+        },
     )
     assert resp2.status_code == 200
     items = resp2.json()

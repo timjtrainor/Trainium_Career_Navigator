@@ -21,8 +21,9 @@ def submit_feedback(feedback: FeedbackIn) -> Feedback:
 def get_feedback(
     job_id: Optional[str] = Query(None),
     agent_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     start_ts: Optional[datetime] = Query(None),
     end_ts: Optional[datetime] = Query(None),
 ) -> List[Feedback]:
-    """Return feedback entries filtered by job, agent, and time."""
-    return list_feedback(job_id, agent_id, start_ts, end_ts)
+    """Return feedback entries filtered by job, agent, user, and time."""
+    return list_feedback(job_id, agent_id, user_id, start_ts, end_ts)
