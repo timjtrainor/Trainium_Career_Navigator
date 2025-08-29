@@ -83,10 +83,21 @@ def _build_agents(job_id: str) -> Dict[str, Agent]:
 
 
 def _parse_output(raw: str) -> Tuple[bool, str]:
-    first_line, _, rest = raw.partition("\n")
-    vote = "yes" in first_line.lower()
-    rationale = rest.split("Rationale:", 1)[-1].strip() if rest else ""
-    return vote, rationale
+    try:
+        first_line, _, rest = raw.partition("\n")
+        if not first_line.lower().startswith("vote:"):
+            raise ValueError("missing vote line")
+        vote_text = first_line.split(":", 1)[1].strip().lower()
+        if vote_text not in {"yes", "no"}:
+            raise ValueError("vote must be 'Yes' or 'No'")
+        vote = vote_text == "yes"
+        if "Rationale:" in rest:
+            rationale = rest.split("Rationale:", 1)[1].strip()
+        else:
+            rationale = ""
+        return vote, rationale
+    except Exception as exc:
+        raise ValueError(f"Unexpected output format: {raw}") from exc
 
 
 def _evaluate_persona_set(job_id: str, persona_ids: List[str]) -> List[PersonaEvaluation]:
