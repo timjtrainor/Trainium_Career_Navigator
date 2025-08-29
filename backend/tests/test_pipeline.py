@@ -9,7 +9,6 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-import numpy as np
 from jobspy_service.app import dedupe as dedupe_module  # type: ignore
 from backend.app.services import evaluation as evaluation_service
 from backend.app.services import decisions as decisions_service
@@ -156,9 +155,9 @@ def test_pipeline_e2e(monkeypatch) -> None:
     data_path = Path(__file__).resolve().parent / "data" / "jobs.json"
     jobs = json.loads(data_path.read_text())
 
-    def fake_embed(job: dict) -> np.ndarray:
+    def fake_embed(job: dict) -> list[float]:
         title = job["title"]
-        return np.array([1.0, 0.0]) if "Widget" in title else np.array([0.0, 1.0])
+        return [1.0, 0.0] if "Widget" in title else [0.0, 1.0]
 
     monkeypatch.setattr(dedupe_module, "_embed", fake_embed)
 

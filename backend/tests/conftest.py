@@ -1,6 +1,13 @@
 import sys
 import types
 
+# Minimal numpy stub so tests avoid heavy dependency
+numpy_stub = types.ModuleType("numpy")
+numpy_stub.array = lambda seq: list(seq)
+numpy_stub.dot = lambda a, b: sum(x * y for x, y in zip(a, b))
+numpy_stub.ndarray = list  # type: ignore[attr-defined]
+sys.modules.setdefault("numpy", numpy_stub)
+
 # Minimal CrewAI stubs for deterministic tests
 class _DummyBaseLLM:
     def __init__(self, model: str) -> None:  # pragma: no cover - trivial
