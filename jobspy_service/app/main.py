@@ -6,6 +6,9 @@ import asyncio
 import logging
 import os
 import time
+import uuid
+from contextlib import contextmanager
+from time import perf_counter
 from typing import Any
 
 import psycopg2
@@ -52,12 +55,46 @@ VALID_SOURCES = {"indeed", "linkedin", "google"}
 class IngestionRun(BaseModel):
     """Record of a single ingestion run."""
 
+    run_id: str
     board: str
     fetched: int
     normalized: int
     unique_new: int
     errors: int
     timestamp: float
+
+
+# Structured logging helper
+@contextmanager
+def _log_stage(run_id: str, board: str, stage: str) -> Any:
+    start = perf_counter()
+    try:
+        yield
+    except Exception as exc:
+        duration = perf_counter() - start
+        logger.error(
+            "stage failed",
+            extra={
+                "run_id": run_id,
+                "board": board,
+                "stage": stage,
+                "duration": duration,
+                "status": "error",
+            },
+        )
+        raise
+    else:
+        duration = perf_counter() - start
+        logger.info(
+            "stage complete",
+            extra={
+                "run_id": run_id,
+                "board": board,
+                "stage": stage,
+                "duration": duration,
+                "status": "ok",
+            },
+        )
 
 
 # Board-specific scheduling configuration
@@ -109,6 +146,22 @@ def _ensure_jobs_table(cur: PGCursor) -> None:
         "job_id_ext TEXT NOT NULL, "
         "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), "
         "UNIQUE (source, job_id_ext))"
+    )
+
+
+def _ensure_ingestion_runs_table(cur: PGCursor) -> None:
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ingestion_runs (
+            run_id UUID PRIMARY KEY,
+            board TEXT NOT NULL,
+            fetched INTEGER NOT NULL,
+            normalized INTEGER NOT NULL,
+            unique_new INTEGER NOT NULL,
+            errors INTEGER NOT NULL,
+            timestamp TIMESTAMPTZ NOT NULL
+        )
+        """
     )
 
 
@@ -262,77 +315,107 @@ def _due(board: str, *, now: float | None = None) -> bool:
 
 
 def ingest_board(board: str, *, now: float | None = None) -> IngestionRun:
+    run_id = str(uuid.uuid4())
+    start_all = perf_counter()
     cfg = BOARD_CONFIG[board]
     limit = cfg.get("results_wanted_max")
-    raw = scrape_jobs(
-        board,
-        hours_old=cfg.get("hours_old"),
-        results_wanted_max=limit,
-        country=cfg.get("country"),
-        delay=cfg.get("delay"),
-    )
-    jobs = raw.get("jobs", [])
-    if limit is not None:
-        jobs = jobs[:limit]
-    normalized_jobs = [normalize_for_db(board, j) for j in jobs]
+    with _log_stage(run_id, board, "scrape"):
+        raw = scrape_jobs(
+            board,
+            hours_old=cfg.get("hours_old"),
+            results_wanted_max=limit,
+            country=cfg.get("country"),
+            delay=cfg.get("delay"),
+        )
+        jobs = raw.get("jobs", [])
+        if limit is not None:
+            jobs = jobs[:limit]
+    with _log_stage(run_id, board, "normalize"):
+        normalized_jobs = [normalize_for_db(board, j) for j in jobs]
     unique_new = 0
+    errors = 0
+    ts = now or time.time()
     conn: psycopg2.extensions.connection | None = None
-    try:
-        conn = _pg_connect()
-        with conn:
-            with conn.cursor() as cur:
-                _ensure_jobs_table(cur)
-                for job in normalized_jobs:
+    with _log_stage(run_id, board, "persist"):
+        try:
+            conn = _pg_connect()
+            with conn:
+                with conn.cursor() as cur:
+                    _ensure_jobs_table(cur)
+                    _ensure_ingestion_runs_table(cur)
+                    for job in normalized_jobs:
+                        cur.execute(
+                            """
+                            INSERT INTO jobs_normalized
+                                (source, title, company, description, location, url,
+                                 is_remote, job_id_ext)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (source, job_id_ext) DO UPDATE SET
+                                title = EXCLUDED.title,
+                                company = EXCLUDED.company,
+                                description = EXCLUDED.description,
+                                location = EXCLUDED.location,
+                                url = EXCLUDED.url,
+                                is_remote = EXCLUDED.is_remote,
+                                updated_at = NOW()
+                            RETURNING xmax = 0
+                            """,
+                            (
+                                job["source"],
+                                job["title"],
+                                job["company"],
+                                job["description"],
+                                job["location"],
+                                job["url"],
+                                job["is_remote"],
+                                job["job_id_ext"],
+                            ),
+                        )
+                        if cur.fetchone()[0]:
+                            unique_new += 1
                     cur.execute(
                         """
-                        INSERT INTO jobs_normalized
-                            (source, title, company, description, location, url,
-                             is_remote, job_id_ext)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (source, job_id_ext) DO UPDATE SET
-                            title = EXCLUDED.title,
-                            company = EXCLUDED.company,
-                            description = EXCLUDED.description,
-                            location = EXCLUDED.location,
-                            url = EXCLUDED.url,
-                            is_remote = EXCLUDED.is_remote,
-                            updated_at = NOW()
-                        RETURNING xmax = 0
+                        INSERT INTO ingestion_runs
+                            (run_id, board, fetched, normalized, unique_new, errors,
+                             timestamp)
+                        VALUES (%s, %s, %s, %s, %s, %s, TO_TIMESTAMP(%s))
                         """,
                         (
-                            job["source"],
-                            job["title"],
-                            job["company"],
-                            job["description"],
-                            job["location"],
-                            job["url"],
-                            job["is_remote"],
-                            job["job_id_ext"],
+                            run_id,
+                            board,
+                            len(jobs),
+                            len(normalized_jobs),
+                            unique_new,
+                            errors,
+                            ts,
                         ),
                     )
-                    if cur.fetchone()[0]:
-                        unique_new += 1
-    except Exception as exc:  # pragma: no cover - best effort
-        logger.warning("database unavailable, skipping persistence: %s", exc)
-    finally:
-        if conn is not None:
-            conn.close()
+        except Exception as exc:  # pragma: no cover - best effort
+            errors += 1
+            logger.warning("database unavailable, skipping persistence: %s", exc)
+        finally:
+            if conn is not None:
+                conn.close()
     run = IngestionRun(
+        run_id=run_id,
         board=board,
         fetched=len(jobs),
         normalized=len(normalized_jobs),
         unique_new=unique_new,
-        errors=0,
-        timestamp=now or time.time(),
+        errors=errors,
+        timestamp=ts,
     )
     INGESTION_RUNS.append(run)
     _LAST_RUN[board] = run.timestamp
     logger.info(
-        "ingested %s fetched=%s normalized=%s new=%s",
-        board,
-        run.fetched,
-        run.normalized,
-        run.unique_new,
+        "ingest complete",
+        extra={
+            "run_id": run_id,
+            "board": board,
+            "stage": "complete",
+            "duration": perf_counter() - start_all,
+            "status": "ok",
+        },
     )
     return run
 
@@ -353,6 +436,38 @@ def run_single(board: str) -> IngestionRun:
     if not BOARD_CONFIG[board].get("enabled", True):
         raise HTTPException(status_code=400, detail="board disabled")
     return ingest_board(board)
+
+
+@app.get("/ingest/runs", response_model=list[IngestionRun])
+def list_runs(limit: int = 100) -> list[IngestionRun]:
+    try:
+        conn = _pg_connect()
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT run_id, board, fetched, normalized, unique_new, errors,
+                       EXTRACT(EPOCH FROM timestamp)
+                FROM ingestion_runs
+                ORDER BY timestamp DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+        return [
+            IngestionRun(
+                run_id=r[0],
+                board=r[1],
+                fetched=r[2],
+                normalized=r[3],
+                unique_new=r[4],
+                errors=r[5],
+                timestamp=r[6],
+            )
+            for r in rows
+        ]
+    except Exception:  # pragma: no cover - fallback to memory
+        return INGESTION_RUNS[-limit:]
 
 
 @app.post("/ingest/run-all", response_model=list[IngestionRun])
