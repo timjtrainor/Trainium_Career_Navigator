@@ -430,12 +430,12 @@ def run_all_due(*, now: float | None = None) -> list[IngestionRun]:
 
 
 @app.post("/ingest/run", response_model=IngestionRun)
-def run_single(board: str) -> IngestionRun:
+async def run_single(board: str) -> IngestionRun:
     if board not in BOARD_CONFIG:
         raise HTTPException(status_code=404, detail="unknown board")
     if not BOARD_CONFIG[board].get("enabled", True):
         raise HTTPException(status_code=400, detail="board disabled")
-    return ingest_board(board)
+    return await asyncio.to_thread(ingest_board, board)
 
 
 @app.get("/ingest/runs", response_model=list[IngestionRun])
@@ -471,14 +471,14 @@ def list_runs(limit: int = 100) -> list[IngestionRun]:
 
 
 @app.post("/ingest/run-all", response_model=list[IngestionRun])
-def run_all_endpoint() -> list[IngestionRun]:
-    return run_all_due()
+async def run_all_endpoint() -> list[IngestionRun]:
+    return await asyncio.to_thread(run_all_due)
 
 
 async def _scheduler_loop() -> None:
     interval = int(os.getenv("INGEST_SCHEDULER_INTERVAL_SECONDS", "3600"))
     while True:
-        run_all_due()
+        await asyncio.to_thread(run_all_due)
         await asyncio.sleep(interval)
 
 
