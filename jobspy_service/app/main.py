@@ -256,41 +256,47 @@ def ingest_board(board: str, *, now: float | None = None) -> IngestionRun:
     jobs = raw.get("jobs", [])
     normalized_jobs = [normalize_for_db(board, j) for j in jobs]
     unique_new = 0
-    conn = _pg_connect()
-    with conn:
-        with conn.cursor() as cur:
-            _ensure_jobs_table(cur)
-            for job in normalized_jobs:
-                cur.execute(
-                    """
-                    INSERT INTO jobs_normalized
-                        (source, title, company, description, location, url,
-                         is_remote, job_id_ext)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (source, job_id_ext) DO UPDATE SET
-                        title = EXCLUDED.title,
-                        company = EXCLUDED.company,
-                        description = EXCLUDED.description,
-                        location = EXCLUDED.location,
-                        url = EXCLUDED.url,
-                        is_remote = EXCLUDED.is_remote,
-                        updated_at = NOW()
-                    RETURNING xmax = 0
-                    """,
-                    (
-                        job["source"],
-                        job["title"],
-                        job["company"],
-                        job["description"],
-                        job["location"],
-                        job["url"],
-                        job["is_remote"],
-                        job["job_id_ext"],
-                    ),
-                )
-                if cur.fetchone()[0]:
-                    unique_new += 1
-    conn.close()
+    conn: psycopg2.extensions.connection | None = None
+    try:
+        conn = _pg_connect()
+        with conn:
+            with conn.cursor() as cur:
+                _ensure_jobs_table(cur)
+                for job in normalized_jobs:
+                    cur.execute(
+                        """
+                        INSERT INTO jobs_normalized
+                            (source, title, company, description, location, url,
+                             is_remote, job_id_ext)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (source, job_id_ext) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            company = EXCLUDED.company,
+                            description = EXCLUDED.description,
+                            location = EXCLUDED.location,
+                            url = EXCLUDED.url,
+                            is_remote = EXCLUDED.is_remote,
+                            updated_at = NOW()
+                        RETURNING xmax = 0
+                        """,
+                        (
+                            job["source"],
+                            job["title"],
+                            job["company"],
+                            job["description"],
+                            job["location"],
+                            job["url"],
+                            job["is_remote"],
+                            job["job_id_ext"],
+                        ),
+                    )
+                    if cur.fetchone()[0]:
+                        unique_new += 1
+    except Exception as exc:  # pragma: no cover - best effort
+        logger.warning("database unavailable, skipping persistence: %s", exc)
+    finally:
+        if conn is not None:
+            conn.close()
     run = IngestionRun(
         board=board,
         fetched=len(jobs),
