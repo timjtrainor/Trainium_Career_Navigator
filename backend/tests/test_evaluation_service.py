@@ -1,3 +1,8 @@
+from pathlib import Path
+import sys
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
 from backend.app.services import evaluation as evaluation_service
 from backend.app.models.evaluation import PersonaEvaluation
 
@@ -34,3 +39,11 @@ def test_evaluate_job_crewai(monkeypatch) -> None:
     assert all(isinstance(r, PersonaEvaluation) for r in results)
     personas = {r.persona for r in results}
     assert personas == set(evaluation_service.MOTIVATIONAL_PERSONAS)
+
+
+def test_evaluate_decision_personas(monkeypatch) -> None:
+    monkeypatch.setattr(evaluation_service, "_get_conn", lambda: FakeConn())
+    results = evaluation_service.evaluate_decision_personas("job2")
+    assert len(results) == 4
+    personas = {r.persona for r in results}
+    assert personas == set(evaluation_service.DECISION_PERSONAS)
