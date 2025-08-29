@@ -118,7 +118,7 @@ BOARD_CONFIG: dict[str, dict[str, Any]] = {
 }
 
 # Track last run time for each board and all run records
-_LAST_RUN: dict[str, float | None] = {b: None for b in BOARD_CONFIG}
+_LAST_RUN: dict[str, float | None] = {}
 INGESTION_RUNS: list[IngestionRun] = []
 
 
@@ -163,6 +163,28 @@ def _ensure_ingestion_runs_table(cur: PGCursor) -> None:
         )
         """
     )
+
+
+def _load_last_runs() -> None:
+    """Load last-run timestamps from the database."""
+
+    try:
+        conn = _pg_connect()
+        with conn, conn.cursor() as cur:
+            _ensure_ingestion_runs_table(cur)
+            cur.execute(
+                """
+                SELECT board, EXTRACT(EPOCH FROM MAX(timestamp))
+                FROM ingestion_runs
+                GROUP BY board
+                """
+            )
+            rows = cur.fetchall()
+        for board, ts in rows:
+            _LAST_RUN[board] = ts
+    except Exception:  # pragma: no cover - best effort
+        for board in BOARD_CONFIG:
+            _LAST_RUN.setdefault(board, None)
 
 
 def scrape_jobs(
@@ -311,6 +333,22 @@ def _interval_for(board: str) -> float:
 def _due(board: str, *, now: float | None = None) -> bool:
     now = now or time.time()
     last = _LAST_RUN.get(board)
+    if last is None:
+        try:
+            conn = _pg_connect()
+            with conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT EXTRACT(EPOCH FROM MAX(timestamp))
+                    FROM ingestion_runs WHERE board = %s
+                    """,
+                    (board,),
+                )
+                row = cur.fetchone()
+            last = row[0] if row and row[0] is not None else None
+        except Exception:  # pragma: no cover - best effort
+            last = None
+        _LAST_RUN[board] = last
     return last is None or now - last >= _interval_for(board)
 
 
@@ -484,5 +522,6 @@ async def _scheduler_loop() -> None:
 
 @app.on_event("startup")
 async def _startup() -> None:  # pragma: no cover - background task
+    _load_last_runs()
     asyncio.create_task(_scheduler_loop())
 
