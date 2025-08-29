@@ -70,3 +70,33 @@ def test_thresholds_config_override(monkeypatch: Any) -> None:
 
     assert {j["title"] for j in deduped} == {"A", "C", "D"}
 
+
+def test_company_alias_collapse(monkeypatch: Any) -> None:
+    """Company name variants map to a single canonical record."""
+
+    embeddings = {
+        "Acme Inc.": np.array([1.0, 0.0]),
+        "Acme Incorporated": np.array([0.0, 1.0]),
+    }
+
+    def fake_embed(job: dict) -> np.ndarray:
+        return embeddings[job["company"]]
+
+    monkeypatch.setattr(dedupe, "_embed", fake_embed)
+
+    jobs = [
+        {
+            "title": "Widget Engineer",
+            "description": "Build widgets",
+            "company": "Acme Inc.",
+        },
+        {
+            "title": "Widget Engineer",
+            "description": "Design widgets",
+            "company": "Acme Incorporated",
+        },
+    ]
+
+    deduped = dedupe_jobs(jobs)
+    assert len(deduped) == 1
+
