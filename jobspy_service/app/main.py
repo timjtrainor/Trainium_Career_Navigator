@@ -8,6 +8,8 @@ import os
 import time
 from typing import Any
 
+import psycopg2
+from psycopg2.extensions import cursor as PGCursor
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -63,14 +65,16 @@ BOARD_CONFIG: dict[str, dict[str, Any]] = {
         "cadence": "4h",
         "results_wanted_max": 50,
         "hours_old": 24,
-        "delay_seconds": 0,
+        "country": "us",
+        "delay": 0,
     },
     "linkedin": {
         "enabled": True,
         "cadence": "daily",
         "results_wanted_max": 50,
         "hours_old": 24,
-        "delay_seconds": 0,
+        "country": "us",
+        "delay": 0,
     },
 }
 
@@ -79,12 +83,54 @@ _LAST_RUN: dict[str, float | None] = {b: None for b in BOARD_CONFIG}
 INGESTION_RUNS: list[IngestionRun] = []
 
 
-def scrape_jobs(source: str, *, search_term: str | None = None) -> dict[str, Any]:
+def _pg_connect() -> psycopg2.extensions.connection:
+    return psycopg2.connect(
+        host=os.getenv("POSTGRES_HOST"),
+        port=os.getenv("POSTGRES_PORT"),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        dbname=os.getenv("POSTGRES_DB"),
+    )
+
+
+def _ensure_jobs_table(cur: PGCursor) -> None:
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS jobs_normalized ("
+        "id SERIAL PRIMARY KEY, "
+        "source TEXT NOT NULL, "
+        "title TEXT NOT NULL, "
+        "company TEXT, "
+        "description TEXT, "
+        "location TEXT, "
+        "url TEXT, "
+        "is_remote BOOLEAN, "
+        "job_id_ext TEXT NOT NULL, "
+        "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), "
+        "UNIQUE (source, job_id_ext))"
+    )
+
+
+def scrape_jobs(
+    source: str,
+    *,
+    search_term: str | None = None,
+    hours_old: int | None = None,
+    results_wanted_max: int | None = None,
+    country: str | None = None,
+    delay: int | None = None,
+) -> dict[str, Any]:
     """Invoke the JobSpy scraping library for the given source."""
 
     if jobspy_lib is None:  # pragma: no cover - library not installed
         return {"jobs": [], "source": source}
-    return jobspy_lib.scrape_jobs(source, search_term=search_term)  # type: ignore[attr-defined]
+    return jobspy_lib.scrape_jobs(
+        source,
+        search_term=search_term,
+        hours_old=hours_old,
+        results_wanted_max=results_wanted_max,
+        country=country,
+        delay=delay,
+    )  # type: ignore[attr-defined]
 
 
 def normalize_job(raw: dict[str, Any]) -> Job:
@@ -106,6 +152,30 @@ def normalize_job(raw: dict[str, Any]) -> Job:
         url=raw.get("url") or raw.get("job_url") or raw.get("link"),
         remote_status=remote_status,
     )
+
+
+def normalize_for_db(source: str, raw: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a raw job for database persistence."""
+
+    job = normalize_job(raw)
+    is_remote = job.remote_status == "remote"
+    job_id_ext = (
+        raw.get("job_id")
+        or raw.get("id")
+        or raw.get("jobkey")
+        or raw.get("job_id_ext")
+        or job.url
+    )
+    return {
+        "source": source,
+        "title": job.title,
+        "company": job.company,
+        "description": job.description,
+        "location": job.location,
+        "url": job.url,
+        "is_remote": is_remote,
+        "job_id_ext": job_id_ext,
+    }
 
 
 @app.get("/jobs/search", response_class=JSONResponse, response_model=JobSearchResponse)
@@ -176,21 +246,68 @@ def _due(board: str, *, now: float | None = None) -> bool:
 
 def ingest_board(board: str, *, now: float | None = None) -> IngestionRun:
     cfg = BOARD_CONFIG[board]
-    time.sleep(cfg.get("delay_seconds", 0))
-    raw = scrape_jobs(board)
+    raw = scrape_jobs(
+        board,
+        hours_old=cfg.get("hours_old"),
+        results_wanted_max=cfg.get("results_wanted_max"),
+        country=cfg.get("country"),
+        delay=cfg.get("delay"),
+    )
     jobs = raw.get("jobs", [])
-    jobs = jobs[: cfg.get("results_wanted_max", len(jobs))]
-    normalized_jobs = [normalize_job(j) for j in jobs]
+    normalized_jobs = [normalize_for_db(board, j) for j in jobs]
+    unique_new = 0
+    conn = _pg_connect()
+    with conn:
+        with conn.cursor() as cur:
+            _ensure_jobs_table(cur)
+            for job in normalized_jobs:
+                cur.execute(
+                    """
+                    INSERT INTO jobs_normalized
+                        (source, title, company, description, location, url,
+                         is_remote, job_id_ext)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (source, job_id_ext) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        company = EXCLUDED.company,
+                        description = EXCLUDED.description,
+                        location = EXCLUDED.location,
+                        url = EXCLUDED.url,
+                        is_remote = EXCLUDED.is_remote,
+                        updated_at = NOW()
+                    RETURNING xmax = 0
+                    """,
+                    (
+                        job["source"],
+                        job["title"],
+                        job["company"],
+                        job["description"],
+                        job["location"],
+                        job["url"],
+                        job["is_remote"],
+                        job["job_id_ext"],
+                    ),
+                )
+                if cur.fetchone()[0]:
+                    unique_new += 1
+    conn.close()
     run = IngestionRun(
         board=board,
         fetched=len(jobs),
         normalized=len(normalized_jobs),
-        unique_new=len(normalized_jobs),
+        unique_new=unique_new,
         errors=0,
         timestamp=now or time.time(),
     )
     INGESTION_RUNS.append(run)
     _LAST_RUN[board] = run.timestamp
+    logger.info(
+        "ingested %s fetched=%s normalized=%s new=%s",
+        board,
+        run.fetched,
+        run.normalized,
+        run.unique_new,
+    )
     return run
 
 
