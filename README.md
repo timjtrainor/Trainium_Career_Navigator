@@ -3,7 +3,7 @@
 This guide explains required **environment variables** and **startup steps** for the Phase 1 stack:
 
 - Kong API Gateway (DB-less)
-- Frontend (static placeholder via Nginx)
+- Frontend (React app via Nginx)
 - Agents API (FastAPI)
 - PostgreSQL (relational)
 - MongoDB (document)
@@ -83,7 +83,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
 ---
 
 ## 3) Health Checks
-- Frontend: Served through Kong at `/` (static Nginx placeholder page).
+- Frontend: React UI at `/`; health JSON at `/health`.
 - Agents: `GET /api/health` returns JSON with environment, DB hosts/ports, and detected LLM keys.
 - Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also connect using your local client to verify.
 
