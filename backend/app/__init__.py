@@ -9,6 +9,7 @@ from .routes.feedback import router as feedback_router
 from .routes.dedupe import router as dedupe_router
 from .routes.evaluate import router as evaluate_router
 from .routes.recommendations import router as recommendations_router
+from .routes.jobs import router as jobs_router
 
 
 def create_app() -> FastAPI:
@@ -21,4 +22,5 @@ def create_app() -> FastAPI:
     app.include_router(dedupe_router)
     app.include_router(evaluate_router)
     app.include_router(recommendations_router)
+    app.include_router(jobs_router)
     return app
