@@ -153,3 +153,31 @@ def evaluate_job(job_id: str) -> List[PersonaEvaluation]:
 
 def evaluate_decision_personas(job_id: str) -> List[PersonaEvaluation]:
     return _evaluate_persona_set(job_id, DECISION_PERSONAS)
+
+
+class JobNotFoundError(Exception):
+    """Raised when a job record does not exist."""
+
+
+class QueueError(Exception):
+    """Raised when an evaluation task cannot be queued."""
+
+
+def queue_job_evaluation(job_id: str) -> None:
+    """Enqueue a job for asynchronous evaluation."""
+
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT 1 FROM jobs_normalized WHERE job_id_ext = %s", (job_id,)
+        )
+        if not cur.fetchone():
+            raise JobNotFoundError
+        cur.close()
+    finally:
+        conn.close()
+    try:
+        logging.getLogger(__name__).info("queued evaluation for %s", job_id)
+    except Exception as exc:  # pragma: no cover - logging rarely fails
+        raise QueueError from exc

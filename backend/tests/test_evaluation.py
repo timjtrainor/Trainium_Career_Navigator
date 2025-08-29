@@ -6,32 +6,41 @@ from fastapi.testclient import TestClient
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-from backend.app.models.evaluation import PersonaEvaluation
 from backend.app.routes.evaluate import router
+from backend.app.services.evaluation import JobNotFoundError
 
 
-def test_evaluate_job(monkeypatch) -> None:
+def test_enqueue_evaluation(monkeypatch) -> None:
     app = FastAPI()
     app.include_router(router)
     client = TestClient(app)
 
-    sample = [
-        PersonaEvaluation(persona="builder", vote_bool=True, rationale_text="grow"),
-        PersonaEvaluation(persona="maximizer", vote_bool=False, rationale_text="low"),
-        PersonaEvaluation(persona="harmonizer", vote_bool=True, rationale_text="fit"),
-        PersonaEvaluation(persona="pathfinder", vote_bool=True, rationale_text="align"),
-        PersonaEvaluation(persona="adventurer", vote_bool=False, rationale_text="boring"),
-    ]
+    called: list[str] = []
 
-    def fake_eval(job_id: str):
-        assert job_id == "job1"
-        return sample
+    def fake_queue(job_id: str) -> None:
+        called.append(job_id)
 
-    monkeypatch.setattr("backend.app.routes.evaluate.evaluate_job", fake_eval)
+    monkeypatch.setattr(
+        "backend.app.routes.evaluate.queue_job_evaluation", fake_queue
+    )
 
     resp = client.post("/api/evaluate/job/job1")
-    assert resp.status_code == 200
+    assert resp.status_code == 202
     data = resp.json()
-    assert len(data) == 5
-    assert data[0]["persona"] == "builder"
-    assert "vote_bool" in data[0]
+    assert data["status"] == "queued"
+    assert called == ["job1"]
+
+
+def test_enqueue_evaluation_not_found(monkeypatch) -> None:
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+
+    def fake_queue(job_id: str) -> None:
+        raise JobNotFoundError
+
+    monkeypatch.setattr(
+        "backend.app.routes.evaluate.queue_job_evaluation", fake_queue
+    )
+    resp = client.post("/api/evaluate/job/job2")
+    assert resp.status_code == 404

@@ -1,51 +1,81 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import List, Optional, Tuple
+from uuid import uuid4
 
 from .evaluation import _get_conn
-from ..models.job import Job, JobDetail, EvaluationSummary
+from ..models.job import (
+    EvaluationSummary,
+    Job,
+    JobCreate,
+    JobCreateResponse,
+    JobDetail,
+)
 
 
 def list_unique_jobs(
     query: str | None = None,
     company: str | None = None,
-    source: str | None = None,
-    since: datetime | None = None,
+    sources: List[str] | None = None,
+    since: str | None = None,
+    hide: List[str] | None = None,
     *,
-    limit: int = 50,
-    offset: int = 0,
-) -> List[Job]:
+    page: int = 1,
+    page_size: int = 50,
+) -> Tuple[List[Job], int]:
     """Return jobs matching filters ordered by recency."""
 
     conn = _get_conn()
     results: List[Job] = []
+    total = 0
     try:
         cur = conn.cursor()
         clauses: list[str] = []
         params: list[object] = []
         if query:
-            clauses.append("(title ILIKE %s OR description ILIKE %s)")
+            clauses.append("(title ILIKE %s OR company ILIKE %s)")
             like = f"%{query}%"
             params.extend([like, like])
         if company:
-            clauses.append("company ILIKE %s")
-            params.append(f"%{company}%")
-        if source:
-            clauses.append("source = %s")
-            params.append(source)
+            clauses.append("company = %s")
+            params.append(company)
+        if sources:
+            placeholders = ",".join(["%s"] * len(sources))
+            clauses.append(f"source IN ({placeholders})")
+            params.extend(sources)
         if since:
-            clauses.append("updated_at >= %s")
-            params.append(since)
-        sql = (
-            "SELECT job_id_ext, title, company, url, source, updated_at "
-            "FROM jobs_normalized"
+            now = datetime.utcnow()
+            delta = {
+                "24h": timedelta(hours=24),
+                "7d": timedelta(days=7),
+                "30d": timedelta(days=30),
+            }.get(since)
+            if delta:
+                clauses.append("updated_at >= %s")
+                params.append(now - delta)
+        if hide:
+            placeholders = ",".join(["%s"] * len(hide))
+            clauses.append(f"COALESCE(decision, 'undecided') NOT IN ({placeholders})")
+            params.extend(hide)
+        where_sql = " WHERE " + " AND ".join(clauses) if clauses else ""
+        base_sql = (
+            "FROM jobs_normalized j LEFT JOIN job_status d "
+            "ON j.job_id_ext = d.job_id"
         )
-        if clauses:
-            sql += " WHERE " + " AND ".join(clauses)
-        sql += " ORDER BY updated_at DESC LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-        cur.execute(sql, params)
+        count_sql = f"SELECT COUNT(*) FROM (SELECT DISTINCT ON (company, title) 1 {base_sql}{where_sql}) AS sub"
+        cur.execute(count_sql, params)
+        total_row = cur.fetchone()
+        total = total_row[0] if total_row else 0
+        limit = page_size
+        offset = (page - 1) * page_size
+        list_sql = (
+            "SELECT DISTINCT ON (j.company, j.title) j.job_id_ext, j.title, j.company, "
+            "j.url, j.source, j.updated_at, COALESCE(d.decision, 'undecided') "
+            f"{base_sql}{where_sql} ORDER BY j.company, j.title, j.updated_at DESC "
+            "LIMIT %s OFFSET %s"
+        )
+        cur.execute(list_sql, params + [limit, offset])
         for row in cur.fetchall():
             results.append(
                 Job(
@@ -55,12 +85,13 @@ def list_unique_jobs(
                     url=row[3],
                     source=row[4],
                     updated_at=row[5],
+                    decision=row[6],
                 )
             )
         cur.close()
     finally:
         conn.close()
-    return results
+    return results, total
 
 
 def get_job_detail(job_id: str) -> Optional[JobDetail]:
@@ -123,3 +154,45 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
         location=location,
         evaluation=summary,
     )
+
+
+def create_job(new_job: JobCreate) -> JobCreateResponse:
+    """Persist a manually logged job."""
+
+    conn = _get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT job_id_ext FROM jobs_normalized WHERE title = %s AND company = %s AND url = %s",
+            (new_job.title, new_job.company, new_job.url),
+        )
+        if cur.fetchone():
+            raise ValueError("duplicate job")
+        job_id = str(uuid4())
+        cur.execute(
+            """
+            INSERT INTO jobs_normalized (
+                source, title, company, description, location, url, job_id_ext, updated_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            RETURNING updated_at
+            """,
+            (
+                "manual",
+                new_job.title,
+                new_job.company,
+                new_job.description,
+                new_job.location,
+                new_job.url,
+                job_id,
+            ),
+        )
+        created_at = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO job_status (job_id, decision) VALUES (%s, %s)",
+            (job_id, "undecided"),
+        )
+        conn.commit()
+        cur.close()
+    finally:
+        conn.close()
+    return JobCreateResponse(job_id=job_id, status="logged", created_at=created_at)
