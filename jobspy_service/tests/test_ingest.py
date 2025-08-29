@@ -33,6 +33,26 @@ async def test_run_records_ingestion(monkeypatch, client):
 
 
 @pytest.mark.anyio
+async def test_results_capped_per_board(monkeypatch):
+    main.INGESTION_RUNS.clear()
+    main.BOARD_CONFIG["demo"] = {
+        "enabled": True,
+        "cadence": "4h",
+        "results_wanted_max": 3,
+        "hours_old": 24,
+        "delay": 0,
+    }
+    sample_job = {"title": "Dev"}
+    sample = {"jobs": [sample_job for _ in range(5)]}
+
+    with patch("jobspy_service.app.main.scrape_jobs", return_value=sample):
+        run = main.ingest_board("demo")
+
+    assert run.fetched == 3
+    assert run.normalized == 3
+
+
+@pytest.mark.anyio
 async def test_run_all_respects_cadence(monkeypatch, client):
     main.INGESTION_RUNS.clear()
     main.BOARD_CONFIG.clear()

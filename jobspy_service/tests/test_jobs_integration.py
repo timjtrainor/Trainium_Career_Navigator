@@ -39,7 +39,12 @@ async def test_search_returns_schema_for_multiple_sources(monkeypatch, client):
         ],
     }
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         return {"jobs": raw_jobs[source], "source": source}
 
     for src in ("indeed", "linkedin"):
@@ -70,7 +75,12 @@ async def test_cached_query_returns_under_one_second(monkeypatch, client):
 
     calls = []
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         calls.append("scrape")
         return {"jobs": [], "source": source}
 

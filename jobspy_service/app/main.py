@@ -46,6 +46,8 @@ logger = logging.getLogger(__name__)
 CACHE_TTL = int(os.getenv("JOBSPY_CACHE_TTL_SECONDS", "600"))
 _CACHE: dict[tuple[str, str], tuple[float, JobSearchResponse]] = {}
 
+VALID_SOURCES = {"indeed", "linkedin", "google"}
+
 
 class IngestionRun(BaseModel):
     """Record of a single ingestion run."""
@@ -186,14 +188,17 @@ def search_jobs(
 ) -> JobSearchResponse:
     """Scrape jobs from the requested source."""
 
-    if os.getenv("JOBSPY_ENABLED", "true").lower() != "true":
+    if os.getenv("JOBSPY_ENABLED", "false").lower() != "true":
         raise HTTPException(status_code=501, detail="scraping disabled")
 
-    allowed = {
+    allowed_raw = [
         s.strip().lower()
-        for s in os.getenv("JOBSPY_SOURCES", "indeed,linkedin,google").split(",")
+        for s in os.getenv("JOBSPY_SOURCES", "").split(",")
         if s.strip()
-    }
+    ]
+    if any(s not in VALID_SOURCES for s in allowed_raw):
+        raise HTTPException(status_code=500, detail="invalid JOBSPY_SOURCES")
+    allowed = set(allowed_raw)
 
     if not allowed:
         raise HTTPException(status_code=501, detail="scraping disabled")
@@ -204,7 +209,15 @@ def search_jobs(
             raise HTTPException(status_code=403, detail="Google not allowlisted")
         raise HTTPException(status_code=400, detail="source not allowlisted")
 
-    delay = int(os.getenv("JOBSPY_DELAY_SECONDS", "2"))
+    delay_str = os.getenv("JOBSPY_DELAY_SECONDS", "2")
+    try:
+        delay = int(delay_str)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500, detail="invalid JOBSPY_DELAY_SECONDS"
+        ) from exc
+    if delay < 0:
+        raise HTTPException(status_code=500, detail="invalid JOBSPY_DELAY_SECONDS")
 
     if source_l == "google":
         if not google_search_term:
@@ -226,8 +239,12 @@ def search_jobs(
 
     logger.info("Applied delay of %ss before scrape", delay)
     time.sleep(delay)
-    raw = scrape_jobs(source_l, search_term=term)
-    jobs = [normalize_job(j) for j in raw.get("jobs", [])]
+    limit = BOARD_CONFIG.get(source_l, {}).get("results_wanted_max")
+    raw = scrape_jobs(source_l, search_term=term, results_wanted_max=limit)
+    raw_jobs = raw.get("jobs", [])
+    if limit is not None:
+        raw_jobs = raw_jobs[:limit]
+    jobs = [normalize_job(j) for j in raw_jobs]
     response = JobSearchResponse(source=source_l, jobs=jobs)
     _CACHE[cache_key] = (time.time(), response)
     return response
@@ -246,14 +263,17 @@ def _due(board: str, *, now: float | None = None) -> bool:
 
 def ingest_board(board: str, *, now: float | None = None) -> IngestionRun:
     cfg = BOARD_CONFIG[board]
+    limit = cfg.get("results_wanted_max")
     raw = scrape_jobs(
         board,
         hours_old=cfg.get("hours_old"),
-        results_wanted_max=cfg.get("results_wanted_max"),
+        results_wanted_max=limit,
         country=cfg.get("country"),
         delay=cfg.get("delay"),
     )
     jobs = raw.get("jobs", [])
+    if limit is not None:
+        jobs = jobs[:limit]
     normalized_jobs = [normalize_for_db(board, j) for j in jobs]
     unique_new = 0
     conn: psycopg2.extensions.connection | None = None
