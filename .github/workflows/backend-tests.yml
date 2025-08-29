@@ -1,11 +1,11 @@
-name: Job Search Tests
+name: Backend Tests
 
 on:
   push:
   pull_request:
 
 jobs:
-  jobspy-tests:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,7 +15,8 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
+          pip install -r backend/requirements-test.txt
           pip install -r jobspy_service/requirements-test.txt
           pip install pytest
       - name: Run tests
-        run: pytest jobspy_service/tests
+        run: pytest backend/tests
