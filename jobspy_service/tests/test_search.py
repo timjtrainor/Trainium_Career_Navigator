@@ -20,6 +20,15 @@ async def test_disabled_returns_501(monkeypatch, client):
 
 
 @pytest.mark.anyio
+async def test_disabled_by_default(monkeypatch, client):
+    monkeypatch.delenv("JOBSPY_ENABLED", raising=False)
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
+    response = await client.get("/jobs/search", params={"source": "indeed"})
+    assert response.status_code == 501
+    assert response.json()["detail"] == "scraping disabled"
+
+
+@pytest.mark.anyio
 async def test_google_not_allowlisted_returns_403(monkeypatch, client):
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
     monkeypatch.setenv("JOBSPY_SOURCES", "indeed,linkedin")
@@ -40,13 +49,37 @@ async def test_google_missing_search_term_returns_400(monkeypatch, client):
 
 
 @pytest.mark.anyio
+async def test_invalid_sources_config(monkeypatch, client):
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed,unknown")
+    response = await client.get("/jobs/search", params={"source": "indeed"})
+    assert response.status_code == 500
+    assert response.json()["detail"] == "invalid JOBSPY_SOURCES"
+
+
+@pytest.mark.anyio
+async def test_invalid_delay_config(monkeypatch, client):
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
+    monkeypatch.setenv("JOBSPY_DELAY_SECONDS", "-1")
+    response = await client.get("/jobs/search", params={"source": "indeed"})
+    assert response.status_code == 500
+    assert response.json()["detail"] == "invalid JOBSPY_DELAY_SECONDS"
+
+
+@pytest.mark.anyio
 async def test_google_scrape_with_delay(monkeypatch, client):
     calls = []
 
     def fake_sleep(delay: float) -> None:
         calls.append(("sleep", delay))
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         calls.append(("scrape", source, search_term))
         return {"jobs": [], "source": source}
 
@@ -68,7 +101,9 @@ async def test_google_scrape_with_delay(monkeypatch, client):
     assert calls[0][1] == 2
     assert calls[1][1:] == ("google", "python")
     mock_sleep.assert_called_once_with(2)
-    mock_scrape.assert_called_once_with("google", search_term="python")
+    mock_scrape.assert_called_once_with(
+        "google", search_term="python", results_wanted_max=None
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["source"] == "google"
@@ -103,7 +138,12 @@ async def test_normalizes_output_for_multiple_sources(monkeypatch, client):
         ],
     }
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         return {"jobs": raw_jobs[source], "source": source}
 
     for src in ("indeed", "linkedin"):
@@ -133,6 +173,31 @@ async def test_normalizes_output_for_multiple_sources(monkeypatch, client):
 
 
 @pytest.mark.anyio
+async def test_search_results_capped(monkeypatch, client):
+    main._CACHE.clear()
+    monkeypatch.setenv("JOBSPY_ENABLED", "true")
+    monkeypatch.setenv("JOBSPY_SOURCES", "indeed")
+    monkeypatch.setitem(main.BOARD_CONFIG, "indeed", {"results_wanted_max": 2})
+
+    sample_job = {
+        "job_title": "Dev",
+        "company": "Acme",
+        "job_description": "Build",
+        "city": "NY",
+        "job_url": "http://indeed/job",
+        "is_remote": True,
+    }
+
+    sample = {"jobs": [sample_job for _ in range(5)]}
+
+    with patch("jobspy_service.app.main.scrape_jobs", return_value=sample):
+        response = await client.get("/jobs/search", params={"source": "indeed"})
+
+    assert response.status_code == 200
+    assert len(response.json()["jobs"]) == 2
+
+
+@pytest.mark.anyio
 async def test_repeat_query_uses_cache(monkeypatch, client):
     main._CACHE.clear()
     monkeypatch.setenv("JOBSPY_ENABLED", "true")
@@ -144,7 +209,12 @@ async def test_repeat_query_uses_cache(monkeypatch, client):
     def fake_sleep(delay: float) -> None:
         calls.append(("sleep", delay))
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         calls.append(("scrape", source, search_term))
         return {"jobs": [], "source": source}
 
@@ -176,7 +246,12 @@ async def test_cache_expires_after_ttl(monkeypatch, client):
     def fake_sleep(delay: float) -> None:
         calls.append(("sleep", delay))
 
-    def fake_scrape(source: str, *, search_term: str | None = None):
+    def fake_scrape(
+        source: str,
+        *,
+        search_term: str | None = None,
+        results_wanted_max: int | None = None,
+    ) -> dict[str, object]:
         calls.append(("scrape", source, search_term))
         return {"jobs": [], "source": source}
 

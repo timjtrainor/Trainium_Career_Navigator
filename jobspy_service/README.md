@@ -23,12 +23,14 @@ regardless of the upstream source. Each job contains the following fields:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `JOBSPY_SOURCES` | Comma-separated list of allowed providers. | `indeed,linkedin,google` |
-| `JOBSPY_ENABLED` | Toggle scraping feature. | `true` |
+| `JOBSPY_SOURCES` | Comma-separated allowlist of providers. | `indeed,linkedin,google` |
+| `JOBSPY_ENABLED` | Toggle scraping feature. | `false` |
 | `JOBSPY_DELAY_SECONDS` | Seconds to wait before making each scraping request. | `2` |
 | `JOBSPY_CACHE_TTL_SECONDS` | Seconds to cache job search results. | `600` |
 | `BIG_COMPANY_THRESHOLD` | Similarity cutoff for large companies during deduping. | `0.9` |
 | `SMALL_COMPANY_THRESHOLD` | Similarity cutoff for small companies during deduping. | `0.85` |
+
+Values outside the allowlist result in a server error.
 
 The delay helps avoid triggering provider rate limits. Adjust the value in your
 `.env` file if necessary. Recent search results are cached in-memory for the
