@@ -30,9 +30,15 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
-    ports:
-      - "${FRONTEND_PORT}:80"
+    build:
+      context: ./frontend
+      target: dev
+    volumes:
+      - ./frontend:/app
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    expose:
+      - "8080"
     networks: [trainium-net]
     restart: unless-stopped
 
@@ -83,8 +89,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PORT}:5432"      # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
     healthcheck:
@@ -101,8 +105,6 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_DB}
     volumes:
       - mongodata:/data/db
-    ports:
-      - "${MONGO_PORT}:27017"    # expose for local tools (optional)
     networks: [trainium-net]
     restart: unless-stopped
     healthcheck:

@@ -1,27 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
-import Discover from './pages/Discover';
-import Progress from './pages/Progress';
-import JobDetail from './pages/JobDetail';
-import Placeholder from './pages/Placeholder';
+import React from 'react';
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="jobs/discover" replace />} />
-        <Route path="jobs/discover" element={<Discover />} />
-        <Route path="jobs/evaluate" element={<Placeholder title="Evaluate Jobs" />} />
-        <Route path="jobs/shortlist" element={<Placeholder title="Shortlist" />} />
-        <Route path="jobs/applications" element={<Placeholder title="Applications" />} />
-        <Route path="jobs/interviews" element={<Placeholder title="Interviews" />} />
-        <Route path="jobs/companies" element={<Placeholder title="Companies" />} />
-        <Route path="jobs/:id" element={<JobDetail />} />
-        <Route path="progress" element={<Progress />} />
-        <Route path="playbook" element={<Placeholder title="Playbook" />} />
-        <Route path="engagement" element={<Placeholder title="Engagement" />} />
-        <Route path="contacts" element={<Placeholder title="Contacts" />} />
-      </Route>
-    </Routes>
+    <h1>Hello World</h1>
   );
 }

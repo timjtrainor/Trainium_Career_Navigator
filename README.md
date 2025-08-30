@@ -3,7 +3,7 @@
 This guide explains required **environment variables** and **startup steps** for the Phase 1 stack:
 
 - Kong API Gateway (DB-less)
-- Frontend (static placeholder via Nginx)
+- Frontend (React via Vite)
 - Agents API (FastAPI)
 - PostgreSQL (relational)
 - MongoDB (document)
@@ -36,12 +36,11 @@ MONGO_DB=trainium
 KONG_LOG_LEVEL=info
 # Admin API bound to localhost; change to 0.0.0.0:8001 for host access in dev
 KONG_ADMIN_LISTEN=127.0.0.1:8001
-KONG_PROXY_PORT=8000
+KONG_PROXY_PORT=80
 KONG_ADMIN_PORT=8001
 
 # === App ===
 ENVIRONMENT=local
-FRONTEND_PORT=80
 ```
 
 > **Tip**: Keep a private `.env.local` for real secrets and `source` it in your shell before running Docker.
@@ -52,8 +51,7 @@ FRONTEND_PORT=80
 - **MONGO_HOST / MONGO_PORT / MONGO_DB**: Connection settings for the Mongo container.
 - **KONG_LOG_LEVEL**: Kong log verbosity (`info`, `debug`, etc.).
 - **KONG_ADMIN_LISTEN**: Admin API bind. Defaults to `127.0.0.1:8001` for safety; set to `0.0.0.0:8001` if you need host access in development.
-- **KONG_PROXY_PORT / KONG_ADMIN_PORT**: Host ports for Kong's proxy and admin interfaces.
-- **FRONTEND_PORT**: Port exposed for the frontend service.
+- **KONG_PROXY_PORT / KONG_ADMIN_PORT**: Host ports for Kong's public proxy (serves frontend and APIs) and admin interface.
 - **ENVIRONMENT**: Passed to the Agents service for environment-aware behavior.
 
 An **`.env.example`** is checked in with safe placeholders so others can copy it to `.env` quickly.
@@ -73,17 +71,20 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    docker compose logs -f kong
    ```
 
-3. **Open services (via Kong)**
-   - Frontend: http://localhost:8000/
-   - Agents API health: http://localhost:8000/api/health
+3. **Open services**
+  - Frontend: http://localhost:80/ (Kong proxies to the frontend service on port 8080; navigation menu is always visible)
+   - Agents API health: http://localhost/api/health
 
 4. **(Dev only) Kong admin status**
    - http://localhost:8001/status
 
+> Databases are internal-only and no longer expose host ports. This avoids conflicts if you already run
+> Postgres or Mongo locally. Use `docker compose exec` or add `ports` mappings if you need host access.
+
 ---
 
 ## 3) Health Checks
-- Frontend: Served through Kong at `/` (static Nginx placeholder page).
+- Frontend: Served through Kong at `http://localhost:80/` (backed by the Vite server on port 8080).
 - Agents: `GET /api/health` returns JSON with environment, DB hosts/ports, and detected LLM keys.
 - Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also connect using your local client to verify.
 
@@ -154,8 +155,7 @@ trainium/
 ---
 
 ## 7) Quick Verification Steps
-- Visit the frontend root → should show "Trainium Stack is Running".
-- Call `GET /api/health` → should return `{ "status": "ok", ... }`.
+- Visit http://localhost:80/ → navigation menu and Hello World text appear.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 
 ---
