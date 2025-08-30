@@ -12,3 +12,8 @@
   max-width: 90%;
   border-radius: 4px;
 }
+.modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

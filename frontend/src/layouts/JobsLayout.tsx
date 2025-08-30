@@ -1,13 +1,29 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import JobsNav from '../components/JobsNav';
 import AddJobModal from '../components/AddJobModal';
 import styles from './JobsLayout.module.css';
 
 export default function JobsLayout() {
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('query') || '');
   const [showModal, setShowModal] = useState(false);
   const isSearchVisible = /\/jobs\/(discover|shortlist)/.test(location.pathname);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (search) {
+        params.set('query', search);
+      } else {
+        params.delete('query');
+      }
+      setSearchParams(params, { replace: true });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search, searchParams, setSearchParams]);
+
   return (
     <div>
       <JobsNav />
@@ -18,6 +34,8 @@ export default function JobsLayout() {
             placeholder="Search jobs"
             aria-label="Search jobs"
             className={styles.search}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         )}
         <button className={styles.addButton} onClick={() => setShowModal(true)}>
