@@ -1,0 +1,21 @@
+.nav {
+  overflow-x: auto;
+  border-bottom: 1px solid #ccc;
+}
+.list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li a {
+  display: block;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  white-space: nowrap;
+}
+.list li a[aria-current="page"] {
+  font-weight: 600;
+  border-bottom: 2px solid currentColor;
+}

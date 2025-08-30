@@ -1,0 +1,15 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+}
+.search {
+  margin-right: 1rem;
+}
+.addButton {
+  padding: 0.5rem 1rem;
+}
+.main {
+  padding: 1rem;
+}
