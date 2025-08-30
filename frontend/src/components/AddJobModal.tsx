@@ -82,53 +82,68 @@ export default function AddJobModal({ onClose }: Props) {
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true" onClick={onClose}>
       <div className={styles.modal} ref={ref} onClick={(e) => e.stopPropagation()}>
-        <h2 id="add-job-title">Add Job</h2>
-        <form onSubmit={handleSubmit}>
-          <label>
-            Job Title
+        <h2 id="add-job-title">Add a New Job Post</h2>
+        <form onSubmit={handleSubmit} aria-labelledby="add-job-title">
+          <label className={styles.field}>
+            <span>Job Title</span>
             <input
               name="title"
+              placeholder="Job Title"
               value={form.title}
               onChange={handleChange}
               required
             />
           </label>
-          <label>
-            Company
-            <input
-              name="company"
-              value={form.company}
-              onChange={handleChange}
-              required
-            />
-          </label>
-          <label>
-            URL
+          <label className={styles.field}>
+            <span>URL for Original Posting</span>
             <input
               name="url"
               type="url"
+              placeholder="URL for Original Posting"
               value={form.url}
               onChange={handleChange}
               required
             />
           </label>
-          <label>
-            Location
-            <input name="location" value={form.location} onChange={handleChange} />
+          <label className={styles.field}>
+            <span>Company Name</span>
+            <input
+              name="company"
+              placeholder="Company Name"
+              value={form.company}
+              onChange={handleChange}
+              required
+            />
           </label>
-          <label>
-            Description
+          <label className={styles.field}>
+            <span>Location</span>
+            <input
+              name="location"
+              placeholder="Location"
+              value={form.location}
+              onChange={handleChange}
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Job Description</span>
             <textarea
               name="description"
+              placeholder="Job Description"
               value={form.description}
               onChange={handleChange}
             />
           </label>
-          {error && <p role="alert">{error}</p>}
-          <div>
-            <button type="submit">Save</button>
-            <button type="button" onClick={onClose}>
+          {error && (
+            <p role="alert" className={styles.error}>
+              {error}
+            </p>
+          )}
+          <div className={styles.actions}>
+            <button type="button" onClick={onClose} className={styles.cancel}>
               Cancel
+            </button>
+            <button type="submit" className={styles.save}>
+              Save Job
             </button>
           </div>
         </form>
