@@ -9,7 +9,6 @@ RUN npm run build
 FROM nginx:alpine
 ARG FRONTEND_PORT=80
 ENV FRONTEND_PORT=${FRONTEND_PORT}
-COPY --from=build /app/dist /usr/share/nginx/html
-# keep health endpoint accessible at /health
-COPY --from=build /app/public/health /usr/share/nginx/html/health
+COPY --from=build /app/dist/ /usr/share/nginx/html/
+# "dist" already contains the `/health` folder for the health check
 EXPOSE ${FRONTEND_PORT}
