@@ -47,6 +47,9 @@ def unique_jobs(
             source=j.source,
             updated_at=j.updated_at,
             decision=j.decision,
+            salary_min=j.salary_min,
+            salary_max=j.salary_max,
+            job_type=j.job_type,
         )
         for j in jobs
     ]

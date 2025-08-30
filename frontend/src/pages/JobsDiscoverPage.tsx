@@ -62,7 +62,6 @@ export default function JobsDiscoverPage() {
       if (!resp.ok) throw new Error('failed');
       return resp.json();
     },
-    keepPreviousData: true,
     staleTime: 30000,
   });
 
@@ -294,7 +293,7 @@ export default function JobsDiscoverPage() {
         </nav>
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast('')} />}
-      {showModal && <AddJobModal onClose={() => setShowModal(false)} />}
+      {showModal && <AddJobModal onClose={() => setShowModal(false)} onSuccess={(msg) => setToast(msg)} />}
     </div>
   );
 }

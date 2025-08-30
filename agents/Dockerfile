@@ -20,5 +20,7 @@ ARG PIP_OPTS="--disable-pip-version-check --prefer-binary --timeout 120 --retrie
 RUN python -m pip install $PIP_OPTS -r requirements.txt -c constraints.txt
 
 COPY app ./app
+# Copy backend code for job routes
+COPY ../backend ./backend
 EXPOSE 8000
 CMD ["uvicorn","app.main:app","--host=0.0.0.0","--port=8000","--workers=2","--proxy-headers"]

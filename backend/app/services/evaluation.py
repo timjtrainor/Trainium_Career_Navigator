@@ -56,9 +56,23 @@ class PersonaLLM(BaseLLM):
 
 def _get_conn() -> psycopg2.extensions.connection:
     dsn = os.environ.get("DATABASE_URL")
-    if not dsn:
-        raise RuntimeError("DATABASE_URL not set")
-    return psycopg2.connect(dsn)
+    if dsn:
+        return psycopg2.connect(dsn)
+    
+    # Fallback to individual environment variables (for agents service)
+    host = os.environ.get("POSTGRES_HOST", "localhost")
+    port = os.environ.get("POSTGRES_PORT", "5432")
+    db = os.environ.get("POSTGRES_DB", "trainium")
+    user = os.environ.get("POSTGRES_USER", "trainium")
+    password = os.environ.get("POSTGRES_PASSWORD", "changeme")
+    
+    return psycopg2.connect(
+        host=host,
+        port=port,
+        database=db,
+        user=user,
+        password=password
+    )
 
 
 def _get_provider(persona_id: str) -> Tuple[str, str]:
