@@ -5,6 +5,7 @@ RUN npm install
 COPY . .
 
 FROM base AS dev
+USER root
 CMD ["npm", "run", "dev"]
 
 FROM base AS build

@@ -74,7 +74,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    ```
 
 3. **Open services**
-   - Frontend: http://localhost:80/ (live reloads when editing files under `frontend/`)
+   - Frontend: http://localhost/ (port 80; navigation menu is always visible)
    - Agents API health (via Kong): http://localhost:8000/api/health
 
 4. **(Dev only) Kong admin status**
@@ -154,7 +154,7 @@ trainium/
 ---
 
 ## 7) Quick Verification Steps
-- Visit http://localhost:80/ → 'Hello World' page appears.
+- Visit http://localhost/ → navigation menu and Hello World text appear.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 
 ---
