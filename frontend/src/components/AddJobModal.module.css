@@ -1,0 +1,54 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: var(--color-surface);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 32rem;
+  box-sizing: border-box;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+.rich {
+  min-height: 8rem;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+.cancel,
+.save {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.save {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.cancel:focus-visible,
+.save:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: 2px;
+}
+.error {
+  color: var(--color-danger);
+}

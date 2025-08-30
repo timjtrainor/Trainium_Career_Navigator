@@ -31,6 +31,8 @@ class JobDetail(Job):
 
     description: str | None = None
     location: str | None = None
+    salary: str | None = None
+    job_type: str | None = None
     evaluation: EvaluationSummary
 
 
@@ -42,6 +44,8 @@ class JobCreate(BaseModel):
     url: str
     location: str | None = None
     description: str | None = None
+    salary: str | None = None
+    job_type: str | None = None
 
 
 class JobCreateResponse(BaseModel):

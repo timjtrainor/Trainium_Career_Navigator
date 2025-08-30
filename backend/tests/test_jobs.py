@@ -69,6 +69,8 @@ class FakeCursorDetail:
                 "http://a",
                 "indeed",
                 datetime(2024, 1, 1),
+                "100k-120k",
+                "full-time",
             )
         if "FROM decisions" in last:
             return (True, 0.9)
@@ -157,6 +159,8 @@ def test_jobs_api(monkeypatch) -> None:
             updated_at=datetime(2024, 1, 1),
             description="Desc",
             location="Remote",
+            salary="100k-120k",
+            job_type="full-time",
             evaluation=EvaluationSummary(yes=2, no=1, final_decision_bool=True, confidence=0.9),
         ),
     )
@@ -178,7 +182,7 @@ def test_jobs_api(monkeypatch) -> None:
     assert detail["evaluation"]["yes"] == 2
     resp = client.post(
         "/api/jobs",
-        json={"title": "Eng", "company": "Acme", "url": "http://a"},
+        json={"title": "Eng", "company": "Acme", "url": "http://a", "salary": "100k-120k", "job_type": "full-time"},
     )
     assert resp.status_code == 201
     body = resp.json()

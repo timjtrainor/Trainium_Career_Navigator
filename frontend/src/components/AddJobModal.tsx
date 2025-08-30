@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from './AddJobModal.module.css';
 
 interface Props {
   onClose: () => void;
+  onSuccess: (msg: string) => void;
 }
 
-export default function AddJobModal({ onClose }: Props) {
+export default function AddJobModal({ onClose, onSuccess }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [form, setForm] = useState({
@@ -15,6 +16,8 @@ export default function AddJobModal({ onClose }: Props) {
     url: '',
     location: '',
     description: '',
+    salary: '',
+    job_type: '',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -53,30 +56,44 @@ export default function AddJobModal({ onClose }: Props) {
     };
   }, [onClose]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const resp = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title,
+          company: form.company,
+          url: form.url,
+          location: form.location,
+          description: form.description,
+          salary: form.salary || undefined,
+          job_type: form.job_type || undefined,
+        }),
+      });
+      if (!resp.ok) throw new Error('failed');
+      return resp.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      onSuccess('Job saved');
+      onClose();
+    },
+    onError: () => setError('Failed to save job'),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const resp = await fetch('/api/jobs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: form.title,
-        company: form.company,
-        url: form.url,
-        location: form.location || undefined,
-        description: form.description || undefined,
-      }),
-    });
-    if (!resp.ok) {
-      setError('Failed to save job');
+    if (!form.description.trim()) {
+      setError('Description is required');
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ['jobs'] });
-    onClose();
+    mutation.mutate();
   };
 
   return (
@@ -122,14 +139,36 @@ export default function AddJobModal({ onClose }: Props) {
               placeholder="Location"
               value={form.location}
               onChange={handleChange}
+              required
             />
           </label>
           <label className={styles.field}>
             <span>Job Description</span>
-            <textarea
-              name="description"
-              placeholder="Job Description"
-              value={form.description}
+            <div
+              className={styles.rich}
+              contentEditable
+              role="textbox"
+              aria-multiline="true"
+              onInput={(e) =>
+                setForm({ ...form, description: (e.target as HTMLDivElement).innerHTML })
+              }
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Salary Range</span>
+            <input
+              name="salary"
+              placeholder="e.g. 100k-120k"
+              value={form.salary}
+              onChange={handleChange}
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Job Type</span>
+            <input
+              name="job_type"
+              placeholder="e.g. full-time"
+              value={form.job_type}
               onChange={handleChange}
             />
           </label>
@@ -142,8 +181,8 @@ export default function AddJobModal({ onClose }: Props) {
             <button type="button" onClick={onClose} className={styles.cancel}>
               Cancel
             </button>
-            <button type="submit" className={styles.save}>
-              Save Job
+            <button type="submit" className={styles.save} disabled={mutation.isLoading}>
+              Create
             </button>
           </div>
         </form>

@@ -294,7 +294,12 @@ export default function JobsDiscoverPage() {
         </nav>
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast('')} />}
-      {showModal && <AddJobModal onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <AddJobModal
+          onClose={() => setShowModal(false)}
+          onSuccess={(msg) => setToast(msg)}
+        />
+      )}
     </div>
   );
 }

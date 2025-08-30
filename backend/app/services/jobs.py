@@ -102,7 +102,7 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
         cur = conn.cursor()
         cur.execute(
             "SELECT job_id_ext, title, company, description, location, url, "
-            "source, updated_at FROM jobs_normalized WHERE job_id_ext = %s",
+            "source, updated_at, salary, job_type FROM jobs_normalized WHERE job_id_ext = %s",
             (job_id,),
         )
         row = cur.fetchone()
@@ -117,7 +117,7 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
             source=row[6],
             updated_at=row[7],
         )
-        description, location = row[3], row[4]
+        description, location, salary, job_type = row[3], row[4], row[8], row[9]
         cur.execute(
             "SELECT vote_bool, COUNT(*) FROM evaluations "
             "WHERE job_unique_id = %s GROUP BY vote_bool",
@@ -152,6 +152,8 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
         updated_at=job.updated_at,
         description=description,
         location=location,
+        salary=salary,
+        job_type=job_type,
         evaluation=summary,
     )
 
@@ -172,8 +174,8 @@ def create_job(new_job: JobCreate) -> JobCreateResponse:
         cur.execute(
             """
             INSERT INTO jobs_normalized (
-                source, title, company, description, location, url, job_id_ext, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                source, title, company, description, location, url, job_id_ext, updated_at, salary, job_type
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s)
             RETURNING updated_at
             """,
             (
@@ -184,6 +186,8 @@ def create_job(new_job: JobCreate) -> JobCreateResponse:
                 new_job.location,
                 new_job.url,
                 job_id,
+                new_job.salary,
+                new_job.job_type,
             ),
         )
         created_at = cur.fetchone()[0]
