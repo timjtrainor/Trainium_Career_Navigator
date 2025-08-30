@@ -1,14 +1,9 @@
-FROM node:18 AS build
-WORKDIR /app
-# Install dependencies separately for better caching
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
 FROM nginx:alpine
+
+# Build output is committed to the repo so the image only needs static files.
 ARG FRONTEND_PORT=80
 ENV FRONTEND_PORT=${FRONTEND_PORT}
-COPY --from=build /app/dist/ /usr/share/nginx/html/
-# "dist" already contains the `/health` folder for the health check
+
+COPY dist/ /usr/share/nginx/html/
+
 EXPOSE ${FRONTEND_PORT}
