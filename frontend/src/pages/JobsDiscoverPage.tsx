@@ -1,6 +1,6 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Toast from '../components/Toast';
 import styles from './JobsDiscoverPage.module.css';
 
@@ -40,6 +40,8 @@ export default function JobsDiscoverPage() {
   const since = searchParams.get('since') || '';
   const selectedSources = searchParams.getAll('source');
   const hide = searchParams.get('hide') === '1';
+
+  const [search, setSearch] = useState(query);
 
   const params = new URLSearchParams();
   if (query) params.set('query', query);
@@ -83,6 +85,17 @@ export default function JobsDiscoverPage() {
     setSearchParams({}, { replace: true });
   };
 
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      updateParams({ query: search || null });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  useEffect(() => {
+    setSearch(query);
+  }, [query]);
+
   const discovered = data?.meta.total || 0;
   const saved = (data?.data || []).filter(
     (j) => (j.decision || '').toLowerCase() === 'yes'
@@ -125,6 +138,14 @@ export default function JobsDiscoverPage() {
         </div>
       </div>
       <div className={styles.filters}>
+        <input
+          type="search"
+          placeholder="Search jobs, companies..."
+          aria-label="Search jobs and companies"
+          className={styles.search}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <div className={styles.filterRow}>
           <label>
             Source

@@ -23,6 +23,9 @@
 - Modals and drawers use `role="dialog"`, focus trap, ESC to close, and `aria-labelledby`/`aria-describedby`.
 - Mark the active route with `aria-current="page"` and ensure all interactive elements are keyboard accessible.
 - Render persona details when present; otherwise show tallies and final decision.
+- Page content begins with a heading and subheading, then any analytics/KPI cards, followed by search and filter controls before
+  lists.
+- List items open detail views in a right-side slide-out drawer.
 
 ## Component patterns
 - Tables support sortable headers with `aria-sort`, `scope="col"` on headers, sticky header on desktop, row hover states and no row selection by default.
