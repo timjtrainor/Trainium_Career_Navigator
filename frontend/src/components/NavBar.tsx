@@ -1,53 +1,122 @@
-import { NavLink, Link } from 'react-router-dom';
 import { useState } from 'react';
-import styles from './NavBar.module.css';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
+  Button,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Link,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+
+const navItems = [
+  { to: '/playbook', label: 'Career Playbook' },
+  { to: '/jobs', label: 'Jobs' },
+  { to: '/engagement', label: 'Engagement' },
+  { to: '/contacts', label: 'Contacts' },
+  { to: '/progress', label: 'Progress' },
+];
 
 export default function NavBar() {
-  const [open, setOpen] = useState(false);
-  const toggle = () => setOpen((o) => !o);
-  const close = () => setOpen(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+  const isActive = (path: string) =>
+    path === '/jobs'
+      ? location.pathname.startsWith('/jobs')
+      : location.pathname === path;
+
+  const drawer = (
+    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center', width: 250 }}>
+      <List>
+        {navItems.map((item) => (
+          <ListItem key={item.to} disablePadding>
+            <ListItemButton
+              component={RouterLink}
+              to={item.to}
+              aria-current={isActive(item.to) ? 'page' : undefined}
+            >
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
-    <header className={styles.navbar}>
-      <a href="#main" className="skip-link">Skip to content</a>
-      <Link to="/jobs/discover" className={styles.logoLink} onClick={close}>
-        <img
-          src="/trainium-logo.svg"
-          alt="Trainium Career Navigator logo"
-          className={styles.logo}
-        />
+    <Box component="header">
+      <Link
+        href="#main"
+        sx={{
+          position: 'absolute',
+          left: -10000,
+          top: 'auto',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          '&:focus': {
+            left: 0,
+            top: 0,
+            width: 'auto',
+            height: 'auto',
+            background: 'background.paper',
+            p: 1,
+            zIndex: 1000,
+          },
+        }}
+      >
+        Skip to content
       </Link>
-      <button
-        className={styles.menuButton}
-        aria-label="Toggle menu"
-        aria-controls="primary-navigation"
-        aria-expanded={open}
-        onClick={toggle}
+      <AppBar position="static" color="default" sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Toolbar>
+          <Link
+            component={RouterLink}
+            to="/jobs/discover"
+            sx={{ mr: 2, display: 'flex', alignItems: 'center' }}
+          >
+            <img src="/trainium-logo.svg" alt="Trainium Career Navigator logo" height={32} />
+          </Link>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', sm: 'flex' } }}>
+            {navItems.map((item) => (
+              <Button
+                key={item.to}
+                component={RouterLink}
+                to={item.to}
+                aria-current={isActive(item.to) ? 'page' : undefined}
+                color="inherit"
+                sx={{ fontWeight: isActive(item.to) ? 600 : undefined }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Box>
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ display: { sm: 'none' }, ml: 'auto' }}
+            aria-label="open navigation"
+          >
+            <MenuIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+      <Drawer
+        anchor="left"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        sx={{ display: { sm: 'none' } }}
       >
-        ☰
-      </button>
-      <nav
-        id="primary-navigation"
-        className={`${styles.nav} ${open ? styles.open : ''}`}
-      >
-        <ul className={styles.links}>
-          <li className={styles.link}>
-            <NavLink to="/playbook" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Career Playbook</NavLink>
-          </li>
-          <li className={styles.link}>
-            <NavLink to="/jobs" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Jobs</NavLink>
-          </li>
-          <li className={styles.link}>
-            <NavLink to="/engagement" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Engagement</NavLink>
-          </li>
-          <li className={styles.link}>
-            <NavLink to="/contacts" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Contacts</NavLink>
-          </li>
-          <li className={styles.link}>
-            <NavLink to="/progress" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Progress</NavLink>
-          </li>
-        </ul>
-      </nav>
-    </header>
+        {drawer}
+      </Drawer>
+    </Box>
   );
 }
+

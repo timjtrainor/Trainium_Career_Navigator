@@ -14,13 +14,14 @@ import ContactsPage from './pages/ContactsPage';
 import ProgressPage from './pages/ProgressPage';
 import NotFoundPage from './pages/NotFoundPage';
 import JobDrawer from './components/JobDrawer';
+import { Box } from '@mui/material';
 
 export default function App() {
   const location = useLocation();
   const state = location.state as { backgroundLocation?: Location } | undefined;
 
   return (
-    <div>
+    <Box>
       <NavBar />
       <Routes location={state?.backgroundLocation || location}>
         <Route path="/playbook" element={<PlaybookPage />} />
@@ -44,6 +45,6 @@ export default function App() {
           <Route path="/jobs/:id" element={<JobDrawer />} />
         </Routes>
       )}
-    </div>
+    </Box>
   );
 }
