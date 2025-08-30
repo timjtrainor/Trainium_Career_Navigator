@@ -1,6 +1,7 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import AddJobModal from '../components/AddJobModal';
 import Toast from '../components/Toast';
 import styles from './JobsDiscoverPage.module.css';
 
@@ -35,12 +36,14 @@ export default function JobsDiscoverPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toast, setToast] = useState('');
-
+  const [showModal, setShowModal] = useState(false);
   const page = Number(searchParams.get('page') || 1);
   const query = searchParams.get('query') || '';
   const since = searchParams.get('since') || '';
   const selectedSources = searchParams.getAll('source');
   const hide = searchParams.get('hide') === '1';
+
+  const [search, setSearch] = useState(query);
 
   const params = new URLSearchParams();
   if (query) params.set('query', query);
@@ -80,6 +83,30 @@ export default function JobsDiscoverPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const clearAll = () => {
+    setSearchParams({}, { replace: true });
+  };
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      updateParams({ query: search || null });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  useEffect(() => {
+    setSearch(query);
+  }, [query]);
+
+  const discovered = data?.meta.total || 0;
+  const saved = (data?.data || []).filter(
+    (j) => (j.decision || '').toLowerCase() === 'yes'
+  ).length;
+  const pending = (data?.data || []).filter((j) => !j.decision).length;
+  const companies = Array.from(
+    new Set((data?.data || []).map((j) => j.company).filter(Boolean))
+  ).length;
+
   const handleAnalyze = async (id: string) => {
     await fetch(`/api/evaluate/job/${id}`, { method: 'POST' });
     setToast('Evaluation started');
@@ -92,45 +119,126 @@ export default function JobsDiscoverPage() {
 
   return (
     <div>
-      <h1>Discover Jobs</h1>
+      <div className={styles.header}>
+        <div>
+          <h1>Discover</h1>
+          <p className={styles.subtitle}>AI-powered job evaluation and tracking</p>
+        </div>
+        <button
+          className={styles.addButton}
+          onClick={() => setShowModal(true)}
+        >
+          Add Job
+        </button>
+      </div>
+      <div className={styles.stats}>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{discovered}</span>
+          <span className={styles.statLabel}>Discovered</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{saved}</span>
+          <span className={styles.statLabel}>Saved</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{pending}</span>
+          <span className={styles.statLabel}>Pending Analysis</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{companies}</span>
+          <span className={styles.statLabel}>Companies</span>
+        </div>
+      </div>
       <div className={styles.filters}>
-        <label>
-          Source
-          <select
-            multiple
-            value={selectedSources}
-            onChange={(e) => {
-              const opts = Array.from(e.target.selectedOptions).map((o) => o.value);
-              updateParams({ source: opts });
-            }}
-          >
-            {sources.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Since
-          <select
-            value={since}
-            onChange={(e) => updateParams({ since: e.target.value || null })}
-          >
-            <option value="">Any time</option>
-            <option value="24h">Last 24h</option>
-            <option value="7d">Last 7d</option>
-            <option value="30d">Last 30d</option>
-          </select>
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={hide}
-            onChange={() => updateParams({ hide: hide ? null : '1' })}
-          />{' '}
-          Hide Rejected/Bad Fit
-        </label>
+        <input
+          type="search"
+          placeholder="Search jobs, companies..."
+          aria-label="Search jobs and companies"
+          className={styles.search}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className={styles.filterRow}>
+          <label>
+            Source
+            <select
+              multiple
+              value={selectedSources}
+              onChange={(e) => {
+                const opts = Array.from(e.target.selectedOptions).map((o) => o.value);
+                updateParams({ source: opts });
+              }}
+            >
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Since
+            <select
+              value={since}
+              onChange={(e) => updateParams({ since: e.target.value || null })}
+            >
+              <option value="">Any time</option>
+              <option value="24h">Last 24h</option>
+              <option value="7d">Last 7d</option>
+              <option value="30d">Last 30d</option>
+            </select>
+          </label>
+          <label className={styles.hideLabel}>
+            <input
+              type="checkbox"
+              checked={hide}
+              onChange={() => updateParams({ hide: hide ? null : '1' })}
+            />{' '}
+            Hide Rejected/Bad Fit
+          </label>
+        </div>
+        <div className={styles.chips}>
+          {query && (
+            <button
+              className={styles.chip}
+              onClick={() => updateParams({ query: null })}
+            >
+              Search: {query} <span aria-hidden="true">×</span>
+            </button>
+          )}
+          {selectedSources.map((s) => (
+            <button
+              key={s}
+              className={styles.chip}
+              onClick={() =>
+                updateParams({ source: selectedSources.filter((x) => x !== s) })
+              }
+            >
+              {s} <span aria-hidden="true">×</span>
+            </button>
+          ))}
+          {since && (
+            <button
+              className={styles.chip}
+              onClick={() => updateParams({ since: null })}
+            >
+              Since {since} <span aria-hidden="true">×</span>
+            </button>
+          )}
+          {hide && (
+            <button
+              className={styles.chip}
+              onClick={() => updateParams({ hide: null })}
+            >
+              Hide rejected <span aria-hidden="true">×</span>
+            </button>
+          )}
+          {(query || selectedSources.length || since || hide) && (
+            <button className={styles.clear} onClick={clearAll}>
+              Clear All Filters
+            </button>
+          )}
+        </div>
       </div>
       {isLoading && <p>Loading...</p>}
       {error && <p role="alert">Error loading jobs</p>}
@@ -138,43 +246,36 @@ export default function JobsDiscoverPage() {
         <p>No jobs yet — click Add Job to get started.</p>
       )}
       {data && data.data.length > 0 && (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th scope="col">Job Title</th>
-              <th scope="col">Company</th>
-              <th scope="col">Source</th>
-              <th scope="col">Updated</th>
-              <th scope="col">Decision</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.data.map((job) => (
-              <tr key={job.id}>
-                <td>
-                  <Link
-                    to={`/jobs/${job.id}`}
-                    state={{ backgroundLocation: location }}
-                  >
-                    {job.title}
-                  </Link>
-                </td>
-                <td>{job.company}</td>
-                <td>{job.source}</td>
-                <td>{formatRelative(job.updated_at)}</td>
-                <td>
-                  {job.decision && (
-                    <span className={styles.pill}>{job.decision}</span>
-                  )}
-                </td>
-                <td className={styles.actions}>
-                  <button onClick={() => handleAnalyze(job.id)}>Analyze</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className={styles.list}>
+          {data.data.map((job) => (
+            <li key={job.id} className={styles.card}>
+              <div className={styles.cardHeader}>
+                <Link
+                  to={`/jobs/${job.id}`}
+                  state={{ backgroundLocation: location }}
+                  className={styles.title}
+                >
+                  {job.title}
+                </Link>
+                {job.decision && (
+                  <span className={styles.pill}>{job.decision}</span>
+                )}
+              </div>
+              <div className={styles.meta}>
+                {job.company && <span>{job.company}</span>}
+                {job.source && (
+                  <span className={styles.source}>{job.source}</span>
+                )}
+                {job.updated_at && <span>{formatRelative(job.updated_at)}</span>}
+              </div>
+              <div className={styles.actions}>
+                <button onClick={() => handleAnalyze(job.id)}>
+                  Analyze with AI
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
       {data && data.meta.page_count > 1 && (
         <nav className={styles.pagination} aria-label="Pagination">
@@ -193,6 +294,7 @@ export default function JobsDiscoverPage() {
         </nav>
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast('')} />}
+      {showModal && <AddJobModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }
