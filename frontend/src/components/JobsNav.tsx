@@ -1,5 +1,5 @@
-import { Tabs, Tab, Box } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import styles from './JobsNav.module.css';
 
 const items = [
   { to: 'discover', label: 'Discover' },
@@ -14,25 +14,16 @@ export default function JobsNav() {
   const location = useLocation();
   const current = location.pathname.split('/')[2] || 'discover';
   return (
-    <Box component="nav" aria-label="Jobs" sx={{ borderBottom: 1, borderColor: 'divider' }}>
-      <Tabs
-        value={current}
-        variant="scrollable"
-        scrollButtons="auto"
-      >
+    <nav className={styles.nav} aria-label="Jobs">
+      <ul className={styles.list}>
         {items.map((item) => (
-          <Tab
-            key={item.to}
-            label={item.label}
-            value={item.to}
-            component={RouterLink}
-            to={item.to}
-            aria-current={current === item.to ? 'page' : undefined}
-            sx={{ textTransform: 'none' }}
-          />
+          <li key={item.to}>
+            <Link to={item.to} aria-current={current === item.to ? 'page' : undefined}>
+              {item.label}
+            </Link>
+          </li>
         ))}
-      </Tabs>
-    </Box>
+      </ul>
+    </nav>
   );
 }
-

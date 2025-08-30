@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #f9f9f9;
+}
+
+:focus {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
