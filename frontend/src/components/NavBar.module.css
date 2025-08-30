@@ -1,0 +1,40 @@
+.navbar {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.menuButton {
+  background: none;
+  border: 1px solid transparent;
+  padding: 0.5rem;
+}
+.menuButton:focus {
+  outline: 2px solid #2563eb;
+}
+.links {
+  display: flex;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 1rem;
+}
+.link a {
+  color: inherit;
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+.link a:focus {
+  outline: 2px solid #2563eb;
+}
+.active {
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .links {
+    flex-direction: column;
+    display: none;
+  }
+  .links.open {
+    display: flex;
+  }
+}
