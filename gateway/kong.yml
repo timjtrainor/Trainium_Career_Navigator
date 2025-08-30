@@ -4,7 +4,7 @@ _transform: true
 services:
   # Frontend (served via Kong at /)
   - name: frontend
-    url: http://frontend:80
+    url: http://frontend:8080
     routes:
       - name: frontend-root
         paths: ["/"]
