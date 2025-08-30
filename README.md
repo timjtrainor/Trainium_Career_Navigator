@@ -72,16 +72,19 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    ```
 
 3. **Open services**
-   - Frontend: http://localhost/ (served through Kong; navigation menu is always visible)
+   - Frontend: http://localhost:80/ (served through Kong; navigation menu is always visible)
    - Agents API health: http://localhost/api/health
 
 4. **(Dev only) Kong admin status**
    - http://localhost:8001/status
 
+> Databases are internal-only and no longer expose host ports. This avoids conflicts if you already run
+> Postgres or Mongo locally. Use `docker compose exec` or add `ports` mappings if you need host access.
+
 ---
 
 ## 3) Health Checks
-- Frontend: Served through Kong at `/` (static Nginx placeholder page).
+- Frontend: Served through Kong at `http://localhost:80/` (static Nginx placeholder page).
 - Agents: `GET /api/health` returns JSON with environment, DB hosts/ports, and detected LLM keys.
 - Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also connect using your local client to verify.
 
@@ -152,7 +155,7 @@ trainium/
 ---
 
 ## 7) Quick Verification Steps
-- Visit http://localhost/ → navigation menu and Hello World text appear.
+- Visit http://localhost:80/ → navigation menu and Hello World text appear.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 
 ---
