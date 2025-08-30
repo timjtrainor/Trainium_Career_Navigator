@@ -74,7 +74,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    ```
 
 3. **Open services**
-   - Frontend: http://localhost:80/ (shows a simple 'Hello World' page)
+   - Frontend: http://localhost:80/ (live reloads when editing files under `frontend/`)
    - Agents API health (via Kong): http://localhost:8000/api/health
 
 4. **(Dev only) Kong admin status**
