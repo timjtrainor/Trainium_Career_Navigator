@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Discover from './pages/Discover';
 import Progress from './pages/Progress';
@@ -8,7 +8,8 @@ import Placeholder from './pages/Placeholder';
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}> 
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="jobs/discover" replace />} />
         <Route path="jobs/discover" element={<Discover />} />
         <Route path="jobs/evaluate" element={<Placeholder title="Evaluate Jobs" />} />
         <Route path="jobs/shortlist" element={<Placeholder title="Shortlist" />} />
