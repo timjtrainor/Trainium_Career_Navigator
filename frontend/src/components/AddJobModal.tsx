@@ -148,6 +148,7 @@ export default function AddJobModal({ onClose, onSuccess }: Props) {
               className={styles.rich}
               contentEditable
               role="textbox"
+              aria-label="Job Description"
               aria-multiline="true"
               onInput={(e) =>
                 setForm({ ...form, description: (e.target as HTMLDivElement).innerHTML })

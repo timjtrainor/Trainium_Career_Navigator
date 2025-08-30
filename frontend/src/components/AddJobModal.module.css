@@ -11,8 +11,16 @@
   padding: var(--spacing-lg);
   border-radius: var(--radius-lg);
   width: 90%;
-  max-width: 32rem;
+  max-width: 80rem;
+  max-height: 90vh;
+  overflow-y: auto;
   box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  .modal {
+    width: 70%;
+  }
 }
 .field {
   display: flex;
@@ -22,10 +30,12 @@
 }
 .rich {
   min-height: 8rem;
+  max-height: 24rem;
   padding: var(--spacing-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
+  overflow-y: auto;
 }
 .actions {
   display: flex;
