@@ -1,6 +1,6 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Toast from '../components/Toast';
 import styles from './JobsDiscoverPage.module.css';
 
@@ -37,7 +37,6 @@ export default function JobsDiscoverPage() {
   const [toast, setToast] = useState('');
   const page = Number(searchParams.get('page') || 1);
   const query = searchParams.get('query') || '';
-  const [search, setSearch] = useState(query);
   const since = searchParams.get('since') || '';
   const selectedSources = searchParams.getAll('source');
   const hide = searchParams.get('hide') === '1';
@@ -80,19 +79,18 @@ export default function JobsDiscoverPage() {
     setSearchParams(next, { replace: true });
   };
 
-  useEffect(() => {
-    const t = setTimeout(
-      () => updateParams({ query: search || null }),
-      300
-    );
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
   const clearAll = () => {
-    setSearch('');
     setSearchParams({}, { replace: true });
   };
+
+  const discovered = data?.meta.total || 0;
+  const saved = (data?.data || []).filter(
+    (j) => (j.decision || '').toLowerCase() === 'yes'
+  ).length;
+  const pending = (data?.data || []).filter((j) => !j.decision).length;
+  const companies = Array.from(
+    new Set((data?.data || []).map((j) => j.company).filter(Boolean))
+  ).length;
 
   const handleAnalyze = async (id: string) => {
     await fetch(`/api/evaluate/job/${id}`, { method: 'POST' });
@@ -106,15 +104,27 @@ export default function JobsDiscoverPage() {
 
   return (
     <div>
-      <h1>Discover Jobs</h1>
+      <h1>Discover</h1>
+      <p className={styles.subtitle}>AI-powered job evaluation and tracking</p>
+      <div className={styles.stats}>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{discovered}</span>
+          <span className={styles.statLabel}>Discovered</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{saved}</span>
+          <span className={styles.statLabel}>Saved</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{pending}</span>
+          <span className={styles.statLabel}>Pending Analysis</span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statValue}>{companies}</span>
+          <span className={styles.statLabel}>Companies</span>
+        </div>
+      </div>
       <div className={styles.filters}>
-        <input
-          type="search"
-          className={styles.search}
-          placeholder="Search jobs"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
         <div className={styles.filterRow}>
           <label>
             Source

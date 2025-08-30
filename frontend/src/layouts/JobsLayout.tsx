@@ -24,6 +24,11 @@ export default function JobsLayout() {
     return () => clearTimeout(handle);
   }, [search, searchParams, setSearchParams]);
 
+  // keep local search state in sync when URL query changes elsewhere
+  useEffect(() => {
+    setSearch(searchParams.get('query') || '');
+  }, [searchParams]);
+
   return (
     <div>
       <JobsNav />
@@ -31,8 +36,8 @@ export default function JobsLayout() {
         {isSearchVisible && (
           <input
             type="search"
-            placeholder="Search jobs"
-            aria-label="Search jobs"
+            placeholder="Search jobs, companies..."
+            aria-label="Search jobs and companies"
             className={styles.search}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
