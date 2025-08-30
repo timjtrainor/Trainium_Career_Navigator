@@ -1,6 +1,7 @@
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
+import AddJobModal from '../components/AddJobModal';
 import Toast from '../components/Toast';
 import styles from './JobsDiscoverPage.module.css';
 
@@ -35,6 +36,7 @@ export default function JobsDiscoverPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [toast, setToast] = useState('');
+  const [showModal, setShowModal] = useState(false);
   const page = Number(searchParams.get('page') || 1);
   const query = searchParams.get('query') || '';
   const since = searchParams.get('since') || '';
@@ -117,8 +119,18 @@ export default function JobsDiscoverPage() {
 
   return (
     <div>
-      <h1>Discover</h1>
-      <p className={styles.subtitle}>AI-powered job evaluation and tracking</p>
+      <div className={styles.header}>
+        <div>
+          <h1>Discover</h1>
+          <p className={styles.subtitle}>AI-powered job evaluation and tracking</p>
+        </div>
+        <button
+          className={styles.addButton}
+          onClick={() => setShowModal(true)}
+        >
+          Add Job
+        </button>
+      </div>
       <div className={styles.stats}>
         <div className={styles.statCard}>
           <span className={styles.statValue}>{discovered}</span>
@@ -282,6 +294,7 @@ export default function JobsDiscoverPage() {
         </nav>
       )}
       {toast && <Toast message={toast} onDismiss={() => setToast('')} />}
+      {showModal && <AddJobModal onClose={() => setShowModal(false)} />}
     </div>
   );
 }
