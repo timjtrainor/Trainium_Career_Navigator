@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    port: 8080,
+    port: parseInt(process.env.FRONTEND_PORT || '8080', 10),
     proxy: {
       '/api': {
         target: 'http://agents:8000',
@@ -24,7 +24,7 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    port: 8080,
+    port: parseInt(process.env.FRONTEND_PORT || '8080', 10),
   },
   resolve: {
     alias: {

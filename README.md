@@ -41,6 +41,7 @@ KONG_ADMIN_PORT=8001
 
 # === App ===
 ENVIRONMENT=local
+FRONTEND_PORT=8080
 ```
 
 > **Tip**: Keep a private `.env.local` for real secrets and `source` it in your shell before running Docker.
@@ -53,6 +54,7 @@ ENVIRONMENT=local
 - **KONG_ADMIN_LISTEN**: Admin API bind. Defaults to `127.0.0.1:8001` for safety; set to `0.0.0.0:8001` if you need host access in development.
 - **KONG_PROXY_PORT / KONG_ADMIN_PORT**: Host ports for Kong's public proxy (serves frontend and APIs) and admin interface.
 - **ENVIRONMENT**: Passed to the Agents service for environment-aware behavior.
+- **FRONTEND_PORT**: Internal port where the Vite dev server listens (Kong proxies to this).
 
 An **`.env.example`** is checked in with safe placeholders so others can copy it to `.env` quickly.
 
@@ -72,7 +74,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    ```
 
 3. **Open services**
-  - Frontend: http://localhost:80/ (Kong proxies to the frontend service on port 8080; navigation menu is always visible)
+  - Frontend: http://localhost:80/ (Kong proxies to the frontend service on port 8080, configurable via `FRONTEND_PORT`; navigation menu is always visible)
    - Agents API health: http://localhost/api/health
 
 4. **(Dev only) Kong admin status**
@@ -84,7 +86,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
 ---
 
 ## 3) Health Checks
-- Frontend: Served through Kong at `http://localhost:80/` (backed by the Vite server on port 8080).
+- Frontend: Served through Kong at `http://localhost:80/` (backed by the Vite server on port 8080, configurable via `FRONTEND_PORT`).
 - Agents: `GET /api/health` returns JSON with environment, DB hosts/ports, and detected LLM keys.
 - Databases: the Agents health payload echoes Postgres & Mongo host/port; you can also connect using your local client to verify.
 

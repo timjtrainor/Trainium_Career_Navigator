@@ -37,8 +37,9 @@ services:
       - ./frontend:/app
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - FRONTEND_PORT=${FRONTEND_PORT}
     expose:
-      - "8080"
+      - "${FRONTEND_PORT}"
     networks: [trainium-net]
     restart: unless-stopped
 
