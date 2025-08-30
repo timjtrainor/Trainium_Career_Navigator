@@ -17,7 +17,7 @@
 - Reference spacing by name (`xs`, `sm`, `md`, `lg`, `xl`, `2xl`) rather than numeric indexes.
 
 ## UX and accessibility
-- Top navigation with `/jobs/*` sub-nav and persistent “Add Job” button.
+- Left sidebar navigation groups `/jobs/*` routes under "Jobs Pipeline" and the Add Job button stays in the Jobs header so it's reachable on any jobs page.
 - Debounce search (250–400ms) and sync filters with URL via `useSearchParams`.
 - Fetch data with React Query; set `staleTime` for lists and show toasts for mutations.
 - Modals and drawers use `role="dialog"`, focus trap, ESC to close, and `aria-labelledby`/`aria-describedby`.

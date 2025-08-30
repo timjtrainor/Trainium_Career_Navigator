@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import NavBar from './components/NavBar';
+import Sidebar from './components/Sidebar';
+import styles from './App.module.css';
 import PlaybookPage from './pages/PlaybookPage';
 import JobsLayout from './layouts/JobsLayout';
 import JobsDiscoverPage from './pages/JobsDiscoverPage';
@@ -20,9 +21,10 @@ export default function App() {
   const state = location.state as { backgroundLocation?: Location } | undefined;
 
   return (
-    <div>
-      <NavBar />
-      <Routes location={state?.backgroundLocation || location}>
+    <div className={styles.app}>
+      <Sidebar />
+      <div className={styles.content}>
+        <Routes location={state?.backgroundLocation || location}>
         <Route path="/playbook" element={<PlaybookPage />} />
         <Route path="/jobs" element={<JobsLayout />}>
           <Route index element={<Navigate to="discover" replace />} />
@@ -38,12 +40,13 @@ export default function App() {
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/progress" element={<ProgressPage />} />
         <Route path="*" element={<NotFoundPage to="/jobs/discover" />} />
-      </Routes>
-      {state?.backgroundLocation && (
-        <Routes>
-          <Route path="/jobs/:id" element={<JobDrawer />} />
         </Routes>
-      )}
+        {state?.backgroundLocation && (
+          <Routes>
+            <Route path="/jobs/:id" element={<JobDrawer />} />
+          </Routes>
+        )}
+      </div>
     </div>
   );
 }

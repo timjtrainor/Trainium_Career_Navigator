@@ -1,6 +1,5 @@
 import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import JobsNav from '../components/JobsNav';
 import AddJobModal from '../components/AddJobModal';
 import styles from './JobsLayout.module.css';
 
@@ -31,7 +30,6 @@ export default function JobsLayout() {
 
   return (
     <div>
-      <JobsNav />
       <header className={styles.header}>
         {isSearchVisible && (
           <input
