@@ -6,5 +6,6 @@ Start the Vite dev server in Docker:
 docker compose up frontend-dev
 ```
 
-Then open <http://localhost:5173> in your browser. Edit files under `frontend/src` and Vite will hot-reload changes.
+On first run the container installs dependencies automatically.
+Open <http://localhost:5173> in your browser and edit files under `frontend/src` to see hot-reloads.
 The health check remains available at <http://localhost:5173/health>.

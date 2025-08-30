@@ -45,6 +45,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     networks: [trainium-net]
     restart: unless-stopped
 
