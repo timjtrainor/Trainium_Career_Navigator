@@ -74,7 +74,7 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    ```
 
 3. **Open services**
-   - Frontend: http://localhost:80/ (shows navigation; "Failed to load jobs" if API is down)
+   - Frontend: http://localhost:80/ (shows a simple 'Hello World' page)
    - Agents API health (via Kong): http://localhost:8000/api/health
 
 4. **(Dev only) Kong admin status**
@@ -154,8 +154,7 @@ trainium/
 ---
 
 ## 7) Quick Verification Steps
-- Visit http://localhost:80/ → navigation menu appears (job list may show "Failed to load jobs" until backend runs).
-- Call `GET /api/health` → should return `{ "status": "ok", ... }`.
+- Visit http://localhost:80/ → 'Hello World' page appears.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 
 ---
