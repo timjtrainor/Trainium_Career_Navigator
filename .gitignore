@@ -33,6 +33,8 @@ ENV/
 # Node / Frontend
 node_modules/
 dist/
+!frontend/dist/
+package-lock.json
 
 # System
 .DS_Store

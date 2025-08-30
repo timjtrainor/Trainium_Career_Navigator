@@ -36,6 +36,19 @@ services:
     networks: [trainium-net]
     restart: unless-stopped
 
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${FRONTEND_DEV_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks: [trainium-net]
+    restart: unless-stopped
+
   agents:
     build: ./agents
     env_file:
