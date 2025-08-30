@@ -12,21 +12,21 @@
   top: 0;
   width: auto;
   height: auto;
-  background: white;
-  padding: 0.5rem;
+  background: var(--color-bg);
+  padding: var(--spacing-sm);
   z-index: 1000;
 }
 .bar {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #ccc;
-  padding: 0.5rem 1rem;
-  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-bg);
 }
-.logo { margin-right: 1rem; display:flex; align-items:center; }
+.logo { margin-right: var(--spacing-lg); display:flex; align-items:center; }
 .navLinks {
   display: flex;
-  gap: 1rem;
+  gap: var(--spacing-lg);
 }
 .navLinks a {
   text-decoration: none;
@@ -40,7 +40,7 @@
   margin-left: auto;
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
 }
 @media (max-width: 600px) {
   .navLinks {
@@ -50,9 +50,9 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: #fff;
-    border-bottom: 1px solid #ccc;
-    padding: 0.5rem 1rem;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-sm) var(--spacing-lg);
   }
   .open {
     display: flex;

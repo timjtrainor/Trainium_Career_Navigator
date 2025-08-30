@@ -7,13 +7,14 @@
   justify-content: center;
 }
 .modal {
-  background: #fff;
-  padding: 1rem;
+  background: var(--color-bg);
+  padding: var(--spacing-lg);
   max-width: 90%;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-md);
 }
 .modal form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
