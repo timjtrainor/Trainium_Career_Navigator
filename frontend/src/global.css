@@ -19,3 +19,10 @@
 body:focus-within .skip-link {
   left: 0;
 }
+
+body {
+  margin: 0;
+  background: #f3f4f6;
+  font-family: system-ui, sans-serif;
+  color: #111827;
+}

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useState } from 'react';
 import styles from './NavBar.module.css';
 
@@ -10,15 +10,27 @@ export default function NavBar() {
   return (
     <header className={styles.navbar}>
       <a href="#main" className="skip-link">Skip to content</a>
+      <Link to="/jobs/discover" className={styles.logoLink} onClick={close}>
+        <img
+          src="/trainium-logo.svg"
+          alt="Trainium Career Navigator logo"
+          className={styles.logo}
+        />
+      </Link>
       <button
         className={styles.menuButton}
         aria-label="Toggle menu"
+        aria-controls="primary-navigation"
+        aria-expanded={open}
         onClick={toggle}
       >
         ☰
       </button>
-      <nav>
-        <ul className={`${styles.links} ${open ? styles.open : ''}`}> 
+      <nav
+        id="primary-navigation"
+        className={`${styles.nav} ${open ? styles.open : ''}`}
+      >
+        <ul className={styles.links}>
           <li className={styles.link}>
             <NavLink to="/playbook" onClick={close} className={({isActive}) => isActive ? styles.active : undefined}>Career Playbook</NavLink>
           </li>

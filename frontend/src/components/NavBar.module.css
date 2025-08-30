@@ -1,21 +1,28 @@
 .navbar {
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
 }
-.menuButton {
-  background: none;
-  border: 1px solid transparent;
-  padding: 0.5rem;
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  margin-right: 1rem;
 }
-.menuButton:focus {
-  outline: 2px solid #2563eb;
+.logo {
+  height: 32px;
+}
+.nav {
+  margin-left: 1rem;
 }
 .links {
   display: flex;
   gap: 1rem;
   list-style: none;
   margin: 0;
-  padding: 0.5rem 1rem;
+  padding: 0;
 }
 .link a {
   color: inherit;
@@ -29,12 +36,29 @@
 .active {
   font-weight: 600;
 }
+.menuButton {
+  background: none;
+  border: 1px solid transparent;
+  padding: 0.5rem;
+  margin-left: auto;
+  display: none;
+}
+.menuButton:focus {
+  outline: 2px solid #2563eb;
+}
 @media (max-width: 600px) {
+  .menuButton {
+    display: block;
+  }
+  .nav {
+    display: none;
+    width: 100%;
+  }
+  .nav.open {
+    display: block;
+  }
   .links {
     flex-direction: column;
-    display: none;
-  }
-  .links.open {
-    display: flex;
+    padding: 0.5rem 0;
   }
 }
