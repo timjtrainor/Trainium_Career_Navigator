@@ -73,9 +73,9 @@ An **`.env.example`** is checked in with safe placeholders so others can copy it
    docker compose logs -f kong
    ```
 
-3. **Open services (via Kong)**
-   - Frontend: http://localhost:8000/
-   - Agents API health: http://localhost:8000/api/health
+3. **Open services**
+   - Frontend: http://localhost/ (shows navigation; "Failed to load jobs" if API is down)
+   - Agents API health (via Kong): http://localhost:8000/api/health
 
 4. **(Dev only) Kong admin status**
    - http://localhost:8001/status
@@ -154,7 +154,7 @@ trainium/
 ---
 
 ## 7) Quick Verification Steps
-- Visit the frontend root → should show "Trainium Stack is Running".
+- Visit http://localhost/ → navigation menu appears (job list may show "Failed to load jobs" until backend runs).
 - Call `GET /api/health` → should return `{ "status": "ok", ... }`.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 

@@ -48,10 +48,14 @@ export default function Discover() {
     setSearchParams(next);
   }, [source, since, hideRejected, hideBadFit]);
 
-  const { data, isLoading } = useQuery(
+  const { data, isLoading, isError } = useQuery(
     ['jobs', searchParams.toString()],
     () => fetchJobs(searchParams),
-    { keepPreviousData: true, staleTime: 30000 }
+    {
+      keepPreviousData: true,
+      staleTime: 30000,
+      onError: () => toast.error('Failed to load jobs'),
+    }
   );
 
   const handleAnalyze = async (id) => {
@@ -113,7 +117,9 @@ export default function Discover() {
       </div>
       {isLoading ? (
         <p>Loading...</p>
-      ) : data.data.length === 0 ? (
+      ) : isError ? (
+        <p>Failed to load jobs</p>
+      ) : data?.data?.length === 0 ? (
         <p>
           No jobs yet — click{' '}
           <button onClick={() => setShowModal(true)}>Add Job</button> to get started.
@@ -150,7 +156,7 @@ export default function Discover() {
           </tbody>
         </table>
       )}
-      {data && data.meta && (
+      {data?.meta && (
         <div className={styles.pagination}>
           <button onClick={prevPage} disabled={page <= 1}>
             Prev
