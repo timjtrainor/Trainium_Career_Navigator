@@ -50,7 +50,9 @@ services:
     restart: unless-stopped
 
   agents:
-    build: ./agents
+    build: 
+      context: .
+      dockerfile: ./agents/Dockerfile
     env_file:
       - .env
     environment:

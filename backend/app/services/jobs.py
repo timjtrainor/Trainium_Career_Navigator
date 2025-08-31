@@ -71,7 +71,8 @@ def list_unique_jobs(
         offset = (page - 1) * page_size
         list_sql = (
             "SELECT DISTINCT ON (j.company, j.title) j.job_id_ext, j.title, j.company, "
-            "j.url, j.source, j.updated_at, COALESCE(d.decision, 'undecided') "
+            "j.url, j.source, j.updated_at, COALESCE(d.decision, 'undecided'), "
+            "j.salary_min, j.salary_max, j.job_type "
             f"{base_sql}{where_sql} ORDER BY j.company, j.title, j.updated_at DESC "
             "LIMIT %s OFFSET %s"
         )
@@ -86,6 +87,9 @@ def list_unique_jobs(
                     source=row[4],
                     updated_at=row[5],
                     decision=row[6],
+                    salary_min=row[7],
+                    salary_max=row[8],
+                    job_type=row[9],
                 )
             )
         cur.close()
@@ -102,7 +106,7 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
         cur = conn.cursor()
         cur.execute(
             "SELECT job_id_ext, title, company, description, location, url, "
-            "source, updated_at FROM jobs_normalized WHERE job_id_ext = %s",
+            "source, updated_at, salary_min, salary_max, job_type FROM jobs_normalized WHERE job_id_ext = %s",
             (job_id,),
         )
         row = cur.fetchone()
@@ -116,6 +120,9 @@ def get_job_detail(job_id: str) -> Optional[JobDetail]:
             url=row[5],
             source=row[6],
             updated_at=row[7],
+            salary_min=row[8],
+            salary_max=row[9],
+            job_type=row[10],
         )
         description, location = row[3], row[4]
         cur.execute(
@@ -172,8 +179,8 @@ def create_job(new_job: JobCreate) -> JobCreateResponse:
         cur.execute(
             """
             INSERT INTO jobs_normalized (
-                source, title, company, description, location, url, job_id_ext, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                source, title, company, description, location, url, job_id_ext, updated_at, salary_min, salary_max, job_type
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
             RETURNING updated_at
             """,
             (
@@ -184,6 +191,9 @@ def create_job(new_job: JobCreate) -> JobCreateResponse:
                 new_job.location,
                 new_job.url,
                 job_id,
+                new_job.salary_min,
+                new_job.salary_max,
+                new_job.job_type,
             ),
         )
         created_at = cur.fetchone()[0]

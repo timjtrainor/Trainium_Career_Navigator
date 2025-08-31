@@ -32,6 +32,9 @@ class FakeCursorList:
                 "indeed",
                 datetime(2024, 1, 1),
                 "undecided",
+                None,  # salary_min
+                None,  # salary_max
+                None,  # job_type
             )
         ]
 
@@ -69,6 +72,9 @@ class FakeCursorDetail:
                 "http://a",
                 "indeed",
                 datetime(2024, 1, 1),
+                None,  # salary_min
+                None,  # salary_max  
+                None,  # job_type
             )
         if "FROM decisions" in last:
             return (True, 0.9)
@@ -140,6 +146,9 @@ def test_jobs_api(monkeypatch) -> None:
                     source="indeed",
                     updated_at=datetime(2024, 1, 1),
                     decision="undecided",
+                    salary_min=None,
+                    salary_max=None,
+                    job_type=None,
                 )
             ],
             1,
@@ -200,3 +209,34 @@ def test_log_job_duplicate(monkeypatch) -> None:
         json={"title": "Eng", "company": "Acme", "url": "http://a"},
     )
     assert resp.status_code == 409
+
+
+def test_log_job_with_salary_and_type(monkeypatch) -> None:
+    app = FastAPI()
+    from backend.app.routes import jobs as jobs_route
+
+    monkeypatch.setattr(
+        jobs_route,
+        "create_job",
+        lambda payload: JobCreateResponse(
+            job_id="id3", 
+            status="logged", 
+            created_at=datetime(2024, 1, 1)
+        ),
+    )
+    app.include_router(jobs_route.router)
+    client = TestClient(app)
+    resp = client.post(
+        "/api/jobs",
+        json={
+            "title": "Senior Engineer", 
+            "company": "TechCorp", 
+            "url": "http://b",
+            "salary_min": 120000,
+            "salary_max": 180000,
+            "job_type": "Full-time"
+        },
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["status"] == "logged"

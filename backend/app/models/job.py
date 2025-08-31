@@ -15,6 +15,9 @@ class Job(BaseModel):
     source: str | None = None
     updated_at: datetime | None = None
     decision: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    job_type: str | None = None
 
 
 class EvaluationSummary(BaseModel):
@@ -42,6 +45,9 @@ class JobCreate(BaseModel):
     url: str
     location: str | None = None
     description: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    job_type: str | None = None
 
 
 class JobCreateResponse(BaseModel):
@@ -70,6 +76,9 @@ class JobOut(BaseModel):
     source: str | None = None
     updated_at: datetime | None = None
     decision: str | None = None
+    salary_min: int | None = None
+    salary_max: int | None = None
+    job_type: str | None = None
 
 
 class JobListResponse(BaseModel):
