@@ -1,5 +1,23 @@
 # Trainium Career Navigator - Architecture Proposal
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [System Overview](#system-overview)
+3. [Architecture Diagram](#architecture-diagram)
+4. [Service Architecture](#service-architecture)
+5. [Data Flow Architecture](#data-flow-architecture)
+6. [Technology Stack](#technology-stack)
+7. [Security Architecture](#security-architecture)
+8. [Deployment Architecture](#deployment-architecture)
+9. [Scalability Architecture](#scalability-architecture)
+10. [Integration Architecture](#integration-architecture)
+11. [Development Workflow](#development-workflow)
+12. [Future Architecture Roadmap](#future-architecture-roadmap)
+13. [Technical Debt and Improvements](#technical-debt-and-improvements)
+14. [Operational Considerations](#operational-considerations)
+15. [Conclusion](#conclusion)
+
 ## Executive Summary
 
 The Trainium Career Navigator is a multi-service platform designed for intelligent job discovery and evaluation using AI-powered analysis. This document outlines the system architecture, design decisions, and technical implementation approach for the platform.
