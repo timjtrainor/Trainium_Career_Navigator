@@ -13,7 +13,7 @@ from pymongo import MongoClient
 from .config import settings
 
 # Add backend to Python path to import job routes
-sys.path.append(str(Path(__file__).parent.parent.parent / "backend"))
+sys.path.append(str(Path(__file__).parent.parent))
 from backend.app.routes.jobs import router as jobs_router
 
 app = FastAPI(title="Trainium Agents API", version="0.1.0")

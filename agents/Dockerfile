@@ -12,15 +12,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m pip install -U pip setuptools wheel
 
 WORKDIR /app
-COPY requirements.txt .
-COPY constraints.txt .
+COPY agents/requirements.txt .
+COPY agents/constraints.txt .
 
 # Make pip resilient and honor constraints to avoid resolver thrash
 ARG PIP_OPTS="--disable-pip-version-check --prefer-binary --timeout 120 --retries 5"
 RUN python -m pip install $PIP_OPTS -r requirements.txt -c constraints.txt
 
-COPY app ./app
-# Copy backend code for job routes
-COPY ../backend ./backend
+COPY agents/app ./app
+# Copy backend code for job routes from build context
+COPY backend ./backend
 EXPOSE 8000
 CMD ["uvicorn","app.main:app","--host=0.0.0.0","--port=8000","--workers=2","--proxy-headers"]

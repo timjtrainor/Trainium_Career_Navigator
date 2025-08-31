@@ -4,6 +4,9 @@ FROM nginx:alpine
 ARG FRONTEND_PORT=80
 ENV FRONTEND_PORT=${FRONTEND_PORT}
 
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 COPY dist/ /usr/share/nginx/html/
 
 EXPOSE ${FRONTEND_PORT}
