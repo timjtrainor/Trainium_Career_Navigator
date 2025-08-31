@@ -2,6 +2,8 @@
 
 This repository contains the Trainium Career Navigator application, a multi-service platform for job discovery and evaluation using AI-powered analysis.
 
+> **📋 For detailed architecture information**, see [architecture_proposal.md](./architecture_proposal.md)
+
 ## Architecture Overview
 
 The application consists of several services orchestrated via **Docker Compose** and routed through **Kong API Gateway**:
