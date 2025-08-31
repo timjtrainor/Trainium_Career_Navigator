@@ -5,15 +5,14 @@ import os
 import psycopg2
 
 from ..models.dedupe_review import DedupeReview
+from ..config import get_database_url
 
 AUTO_THRESHOLD = float(os.getenv("DEDUPE_AUTO_THRESHOLD", "0.95"))
 REVIEW_THRESHOLD = float(os.getenv("DEDUPE_REVIEW_THRESHOLD", "0.8"))
 
 
 def _get_conn() -> psycopg2.extensions.connection:
-    dsn = os.environ.get("DATABASE_URL")
-    if not dsn:
-        raise RuntimeError("DATABASE_URL not set")
+    dsn = get_database_url()
     return psycopg2.connect(dsn)
 
 

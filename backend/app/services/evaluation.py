@@ -11,6 +11,7 @@ from crewai.llms.base_llm import BaseLLM
 
 from ..models.evaluation import PersonaEvaluation
 from ..services.personas_loader import load_personas
+from ..config import get_database_url
 
 logger = logging.getLogger(__name__)
 
@@ -55,24 +56,8 @@ class PersonaLLM(BaseLLM):
 
 
 def _get_conn() -> psycopg2.extensions.connection:
-    dsn = os.environ.get("DATABASE_URL")
-    if dsn:
-        return psycopg2.connect(dsn)
-    
-    # Fallback to individual environment variables (for agents service)
-    host = os.environ.get("POSTGRES_HOST", "localhost")
-    port = os.environ.get("POSTGRES_PORT", "5432")
-    db = os.environ.get("POSTGRES_DB", "trainium")
-    user = os.environ.get("POSTGRES_USER", "trainium")
-    password = os.environ.get("POSTGRES_PASSWORD", "changeme")
-    
-    return psycopg2.connect(
-        host=host,
-        port=port,
-        database=db,
-        user=user,
-        password=password
-    )
+    dsn = get_database_url()
+    return psycopg2.connect(dsn)
 
 
 def _get_provider(persona_id: str) -> Tuple[str, str]:

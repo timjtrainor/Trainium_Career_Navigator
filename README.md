@@ -1,19 +1,27 @@
 # Trainium – Local Dev Guide
 
-This guide explains required **environment variables** and **startup steps** for the Phase 1 stack:
+This repository contains the Trainium Career Navigator application, a multi-service platform for job discovery and evaluation using AI-powered analysis.
 
-- Kong API Gateway (DB-less)
-- Frontend (static placeholder via Nginx)
-- Agents API (FastAPI)
-- PostgreSQL (relational)
-- MongoDB (document)
-  
+## Architecture Overview
+
+The application consists of several services orchestrated via **Docker Compose** and routed through **Kong API Gateway**:
+
+- **Frontend**: React application served via Kong at `/`
+- **Agents**: FastAPI service that includes backend routes, served via Kong at `/api`
+- **JobSpy Service**: Job scraping service, served via Kong at `/jobs`
+- **PostgreSQL**: Primary database for job data and evaluations
+- **MongoDB**: Document store for additional data
+- **Kong**: API Gateway for routing and CORS handling
+
 Persistent data for Postgres and Mongo is stored in named Docker volumes (`pgdata`, `mongodata`) so database contents survive restarts.
 
 ---
 
 ## 1) Environment Variables (.env)
-Copy `.env.example` to `.env` in the repo root and update as needed. Do **not** commit real secrets.
+
+**⚠️ Security Notice**: All sensitive data (passwords, API keys, secrets) are managed through environment variables and **must never be hardcoded in the source code**. The application uses `python-dotenv` to securely load these variables.
+
+Copy `.env.example` to `.env` in the repo root and update as needed. **Do not commit real secrets** - the `.env` file is already excluded in `.gitignore`.
 
 ```bash
 # === LLM providers ===
@@ -42,7 +50,18 @@ KONG_ADMIN_PORT=8001
 # === App ===
 ENVIRONMENT=local
 FRONTEND_PORT=80
+FRONTEND_DEV_PORT=5173
+
+# === JobSpy ===
+JOBSPY_DELAY_SECONDS=2
 ```
+
+### Environment Variable Loading
+
+The application automatically loads environment variables through:
+- **Agents service**: Uses `load_dotenv()` in `agents/app/config.py`
+- **Backend services**: Centralized loading via `backend/app/config.py`
+- **Docker services**: Environment variables passed via `env_file: - .env` in `docker-compose.yml`
 
 > **Tip**: Keep a private `.env.local` for real secrets and `source` it in your shell before running Docker.
 
@@ -158,9 +177,68 @@ trainium/
 - Call `GET /api/health` → should return `{ "status": "ok", ... }`.
 - Check Kong admin `/status` (dev) → should show OK and your route/services.
 
+## 8) Job Posting Functionality
+
+### Via UI (Frontend)
+1. Navigate to `/jobs/discover` in the frontend
+2. Click the "Add Job" button (positioned on the same row as the page heading)
+3. Fill in the required fields:
+   - **Job Title** (required)
+   - **Company Name** (required)
+   - **URL for Original Posting** (required)
+   - Location (optional)
+   - Job Description (optional)
+   - Salary Range (optional)
+   - Job Type (optional)
+4. Click "Submit" - you should see a success message if the job is saved
+
+### Via curl (API Testing)
+```bash
+# Test job posting via API
+curl -X POST http://localhost:8000/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Senior Python Developer",
+    "company": "Example Corp",
+    "url": "https://example.com/jobs/python-dev",
+    "location": "Remote",
+    "description": "Looking for an experienced Python developer...",
+    "salary_min": 80000,
+    "salary_max": 120000,
+    "job_type": "Full-time"
+  }'
+```
+
+**Expected Response** (HTTP 201):
+```json
+{
+  "job_id": "uuid-here",
+  "message": "Job created successfully"
+}
+```
+
+**Error Response** (HTTP 409 for duplicates):
+```json
+{
+  "detail": "duplicate job"
+}
+```
+
+### Required Fields for Job Posting
+- `title`: String (job title)
+- `company`: String (company name)
+- `url`: String (URL to original job posting)
+
+### Optional Fields
+- `location`: String
+- `description`: String
+- `salary_min`: Integer (minimum salary)
+- `salary_max`: Integer (maximum salary)
+- `job_type`: String (e.g., "Full-time", "Part-time", "Contract")
+
 ---
 
-## 8) Next
+## 9) Next Steps
 - Add jobspy_service microservice and route via Kong at `/jobs`.
 - Introduce auth (JWT/OIDC) and rate limiting in Kong for staging.
 - Add observability (structured logs, metrics) once the stack is stable.

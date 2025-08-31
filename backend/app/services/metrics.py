@@ -8,12 +8,11 @@ import os
 import psycopg2
 
 from ..models.metric import Metric
+from ..config import get_database_url
 
 
 def _get_conn() -> psycopg2.extensions.connection:
-    dsn = os.environ.get("DATABASE_URL")
-    if not dsn:
-        raise RuntimeError("DATABASE_URL not set")
+    dsn = get_database_url()
     return psycopg2.connect(dsn)
 
 
