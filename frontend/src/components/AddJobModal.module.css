@@ -115,3 +115,42 @@
   border-color: #9ca3af;
   cursor: not-allowed;
 }
+
+.pasteStep {
+  display: flex;
+  flex-direction: column;
+}
+
+.instruction {
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.pasteArea {
+  width: 100%;
+  min-height: 200px;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  resize: vertical;
+  margin-bottom: 1rem;
+  font-family: inherit;
+}
+
+.formHeader {
+  margin-bottom: 1rem;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+.backLink:hover {
+  color: #374151;
+}
