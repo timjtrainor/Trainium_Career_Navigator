@@ -13,8 +13,25 @@ from ..models.job import (
     JobCreateResponse,
 )
 from ..services.jobs import create_job, get_job_detail, list_unique_jobs
+from ..services.extraction import extract_job_details, JobExtract
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class ExtractRequest(BaseModel):
+    text: str
+
+
+@router.post("/api/extract-job", response_model=JobExtract)
+def extract_job(payload: ExtractRequest) -> JobExtract:
+    """Extract job details from text."""
+    try:
+        return extract_job_details(payload.text)
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to extract job details")
 
 
 @router.get("/api/jobs/unique", response_model=JobListResponse)
